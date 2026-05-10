@@ -1,3 +1,8 @@
 build/
 .cache/
 logs
+obj/
+bin/
+.claude/
+*.log
+.vscode
