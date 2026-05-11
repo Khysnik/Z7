@@ -76,39 +76,34 @@ std::unique_ptr<blaze::Packet> Authentication::handleLogin(
 
     blaze::TdfBuilder builder;
     builder
-        .integer("NTOS", 0)
-        .string("PCTK", authToken)
-        .string("PRIV", "")
+        .boolean("ANON", false)
+        .boolean("NTOS", false)
         .beginStruct("SESS")
-            .integer("BUID", userId)
-            .integer("FRST", 0)
+            .boolean("1CON", false)
+            .int64("BUID", userId)
+            .boolean("FRST", false)
             .string("KEY", authToken)
-            .integer("LLOG", 0)
+            .int64("LLOG", 0)
             .string("MAIL", email)
             .beginStruct("PDTL")
-                .string("DPTS", "")
-                .integer("EXID", 0)
-                .integer("GTYP", 0)
-                .string("MAIL", email)
-                .integer("PID", userId)
-                .string("PNAM", personaName)
+                .string("DSNM", personaName)
+                .uint32("LAST", 1612345678)
+                .int64("PID", userId)
+                .int64("PLAT", 4) //pc
+                .int64("STAS", 2) //ACTIVE
+                .uint64("XREF", 1234)
             .endStruct()
-            .integer("UID", userId)
+            .int64("UID", userId)
         .endStruct()
-        .integer("SPAM", 0)
-        .string("THST", "")
-        .string("TSUI", "")
-        .string("TURI", "");
+        .boolean("SPAM", true)
+        .boolean("UNDR", false);
+
 
     auto reply = request.createReply();
     reply->setPayload(builder.build());
 
     LOG_INFO("[auth] login persona={} session={}", personaName, sessionId);
 
-    // Send the login reply first, then push UserAuthenticated notification.
-    // BlazeSDK gates LocalUser creation on this notification — without it,
-    // UserManager::onUserAuthenticated never fires and the game stays on
-    // the loading screen waiting for postAuth to be initiated by the SDK.
     client->sendPacket(std::move(reply));
     sendUserAuthenticatedNotification(client, userId, authToken, personaName);
     return nullptr;
@@ -120,27 +115,25 @@ void Authentication::sendUserAuthenticatedNotification(
     const std::string& sessionKey,
     const std::string& personaName
 ) {
-    // UserSessions::UserAuthenticated, notif id 8.
-    // Payload = UserSessionLoginInfo (gen/component/framework/gen/userdefines.tdf:553).
+
     blaze::TdfBuilder builder;
     builder
-        .beginStruct("AIDS")              // PlatformInfo
-            .integer("PLAT", 4)           // ClientPlatformType::pc
-        .endStruct()
-        .integer("ALOC", 1701729619)      // 'enUS' as packed locale
-        .integer("BUID", userId)
-        .integer("CNTY", 0)
+        .boolean("1CON", false)
+        .uint32("ALOC", 1701729619) // 'enUS' packed locale
+        .int64("BUID", userId)
+        .pair("CGID", 0, 0) //objectId type?
         .string("DSNM", personaName)
-        .integer("FRST", 0)
+        .boolean("FRST", false)
         .string("KEY",  sessionKey)
-        .integer("LAST", static_cast<int64_t>(time(nullptr)))
-        .integer("LLOG", 0)
+        .uint32("LAST", 1612345678)
+        .int64("LLOG", 1234)
         .string("MAIL", "")
         .string("NASP", "cem_ea_id")
-        .integer("PID",  userId)
-        .integer("PLAT", 4)               // DEPRECATED ClientPlatformType, kept for older SDKs
-        .integer("UID",  userId)
-        .integer("USTP", 0);              // UserSessionType::USER_SESSION_NORMAL
+        .int64("PID", userId)
+        .int64("PLAT", 4) //pc
+        .int64("UID", userId)
+        .int64("USTP", 0)
+        .uint64("XREF", 1234);
 
     auto notif = std::make_unique<blaze::Packet>(
         blaze::ComponentId::UserSessions,
@@ -153,16 +146,12 @@ void Authentication::sendUserAuthenticatedNotification(
     LOG_INFO("[auth] pushed UserAuthenticated notif (uid={})", userId);
 }
 
-// UserAdded notification is pushed by Util::handlePostAuth after the
-// postAuth response (see util.cpp::pushUserAddedNotification). The SDK
-// requires postAuth to have completed before extended data is meaningful.
 
 std::unique_ptr<blaze::Packet> Authentication::handleExpressLogin(
     const blaze::Packet& request,
     std::shared_ptr<network::ClientConnection> client
 ) {
 
-    // GW2 sends a Nucleus auth token. We accept any token and create a session.
     auto requestTdf = request.getPayloadAsTdf();
 
     std::string authCode;
@@ -224,13 +213,6 @@ std::unique_ptr<blaze::Packet> Authentication::handleExpressLogin(
 
     LOG_INFO("[auth] expressLogin persona={} session={}", personaName, sessionId);
 
-    // Mirror handleLogin: send the reply first, then push UserAuthenticated.
-    // BlazeSDK gates LocalUser creation (and onLocalUserAuthenticated) on
-    // UserSessions::UserAuthenticated (notif id=8). Without this push, the
-    // network state machine advances through postAuth and all game-level RPCs,
-    // but UserManager::onUserAuthenticated never fires, so LocalUser is never
-    // created and the game can't transition to the main menu. The SDK then
-    // tears the connection down after its login-state-machine timeout (~6.5 s).
     client->sendPacket(std::move(reply));
     sendUserAuthenticatedNotification(client, userId, newToken, personaName);
     return nullptr;

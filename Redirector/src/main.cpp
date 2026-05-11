@@ -18,7 +18,7 @@
 namespace gosredirector
 {
 
-    static constexpr const char *kListenHost = "127.0.0.1";
+    static constexpr const char *kListenHost = "0.0.0.0";
     static constexpr uint16_t kListenPort = 42230;
     static constexpr const char *kCertPath = "certs/server.crt";
     static constexpr const char *kKeyPath = "certs/server.key";

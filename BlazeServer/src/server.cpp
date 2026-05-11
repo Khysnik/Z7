@@ -325,8 +325,6 @@ void Server::handleConnectAuthGetConnection(
 
             LOG_INFO("[nucleus] GET /connect/auth from conn {}", connId);
 
-            // Extract redirect_uri from query string (URL-decoded).
-            // Fall back to the value we advertise in IdentityParams.
             std::string redirectUri = "http://127.0.0.1/callback";
             auto ruPos = headers.find("redirect_uri=");
             if (ruPos != std::string::npos) {

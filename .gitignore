@@ -6,3 +6,9 @@ bin/
 .claude/
 *.log
 .vscode
+dom.txt
+dump.bin
+
+#incomplete
+QoSServer/
+BlazeClient/
