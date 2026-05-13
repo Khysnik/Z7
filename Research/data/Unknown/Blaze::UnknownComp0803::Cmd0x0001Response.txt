@@ -1,0 +1,104 @@
+//comp=0x0803 cmd=0x0001 msgType=Reply msgNum=18  [Blaze::UnknownComp0803::Cmd0x0001Response]
+INVT = {
+  CLST = [
+    [0] = {
+      ACTT = 0 (0x0000)
+      CKEY = "Coinz"
+      DURA = 1 (0x0001)
+      QANT = 75683 (0x000127A3)
+    }
+    [1] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_browncoat"
+      DURA = 1 (0x0001)
+      QANT = 5 (0x0005)
+    }
+    [2] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_eimpzombie"
+      DURA = 1 (0x0001)
+      QANT = 1 (0x0001)
+    }
+    [3] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_marigold"
+      DURA = 1 (0x0001)
+      QANT = 10 (0x000A)
+    }
+    [4] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_peacannon"
+      DURA = 1 (0x0001)
+      QANT = 5 (0x0005)
+    }
+    [5] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_peagatling"
+      DURA = 1 (0x0001)
+      QANT = 2 (0x0002)
+    }
+    [6] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_scrdoorzomb"
+      DURA = 1 (0x0001)
+      QANT = 5 (0x0005)
+    }
+    [7] = {
+      ACTT = 0 (0x0000)
+      CKEY = "teamrevive"
+      DURA = 1 (0x0001)
+      QANT = 1 (0x0001)
+    }
+    [8] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_healstation"
+      DURA = 1 (0x0001)
+      QANT = 1 (0x0001)
+    }
+    [9] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_lightreed"
+      DURA = 1 (0x0001)
+      QANT = 6 (0x0006)
+    }
+    [10] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_weed"
+      DURA = 1 (0x0001)
+      QANT = 10 (0x000A)
+    }
+    [11] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_weedflag"
+      DURA = 1 (0x0001)
+      QANT = 1 (0x0001)
+    }
+    [12] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_weedshield"
+      DURA = 1 (0x0001)
+      QANT = 5 (0x0005)
+    }
+    [13] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_weedheal"
+      DURA = 1 (0x0001)
+      QANT = 5 (0x0005)
+    }
+    [14] = {
+      ACTT = 0 (0x0000)
+      CKEY = "ais_dandelion"
+      DURA = 1 (0x0001)
+      QANT = 1 (0x0001)
+    }
+    [15] = {
+      ACTT = 0 (0x0000)
+      CKEY = "RainbowStar"
+      DURA = 1 (0x0001)
+      QANT = 44 (0x002C)
+    }
+  ]
+  ULST = [
+    [0] = "abchrb"
+  ]
+}

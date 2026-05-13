@@ -1,0 +1,122 @@
+//comp=0x0805 cmd=0x001E msgType=Reply msgNum=51  [Blaze::PvzGw::GetPlaylistsResponse]
+PL = [
+  [0] = {
+    ID = "community"
+    PL = [
+      [0] = {
+        DESC = "Plants and zombies are spawning! Play as one half of a tank/healer super-team and win the day! Join the plants as either Citron or Sunflower, or join the zombies as either All-Star or Scientist. Fight, heal, win."
+        ID = "community"
+        LOAD = "_pvz/UI/Assets/LoadScreen_CP_CrazySettings"
+        NAME = "Tactical Team-up"
+        SCEN = [
+          [0] = "findDedicatedCommunity"
+          [1] = "findCreateDedicated24"
+        ]
+      }
+    ]
+    SCEN = [
+      [0] = "findDedicated1"
+      [1] = "findDedicated2"
+    ]
+  }
+  [1] = {
+    ID = "tournament"
+    PL = [
+      [0] = {
+        DESC = "An extra-large mysterious cavern of Gnomish origin. The source of their time shards? The origin of time itself?! Who knows what unknown Gnomey-ness is contained within…"
+        ID = "CvD"
+        LOAD = "_pvz/UI/Assets/LoadScreen_CP_CatsVsDinos"
+        NAME = "Gnomiverse XL"
+      }
+      [1] = {
+        DESC = "Zen Peak was the birthplace of Zen from which all magic sparkle originated.  Both Plants and Zombies vacation here during off peak travel times."
+        ID = "GBAsia"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Asia"
+        NAME = "Zen Peak"
+      }
+      [2] = {
+        DESC = "There's big trouble in not so little Zombopolis. The Plants must stop the Zombies from launching Zombot into battle before it's too late!
+"
+        ID = "GBBrainStreet"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_BrainStreet"
+        NAME = "Zombopolis"
+      }
+      [3] = {
+        DESC = "Boney Island mysteriously attracts all that are lost.  Ships, Aircraft, even time itself.  Chances are, if you are lost... You are here!"
+        ID = "GBDino"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Dino"
+        NAME = "Boney Island"
+      }
+      [4] = {
+        DESC = "Sandy Sands is amazingly full of sand.  Known worldwide for its sandcastles, sandals, sandbags, sanders, sandboxes and sandwiches."
+        ID = "GBEgypt"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Egypt"
+        NAME = "Sandy Sands"
+      }
+      [5] = {
+        DESC = "For Rent:  One large Colizeum.  Open space concept, lots of room for activities!  Currently lacking electricity, plumbing, doors, windows and roof.  Serious inquiries only. "
+        ID = "GBRome"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Rome"
+        NAME = "Colizeum"
+      }
+      [6] = {
+        DESC = "The only thing colder than a frosty creek is frozen frost itself!  Also liquid nitrogen, ice cream, very cold rocks & frozen bread."
+        ID = "GBSnow"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Snow"
+        NAME = "Frosty Creek"
+      }
+      [7] = {
+        DESC = "A secret staging area from which Dr. Zomboss plans to dominate every planet in the solar system.  It also has space golf!"
+        ID = "GBSpace"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Space"
+        NAME = "Lunar Landing"
+      }
+      [8] = {
+        DESC = "What do you get when you mix four time periods and interconnect them with ancient portals reverse engineered from gnome technology?  We're not sure either."
+        ID = "GBTimePark"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_TimePark"
+        NAME = "Time Park"
+      }
+      [9] = {
+        DESC = "The Zomboss Z-Tech Factory is one of many facilities from which Dr. Zomboss mass produces his Zombie army.  It has an amazing break room."
+        ID = "GBZombossFactory"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Factory"
+        NAME = "Z-Tech Factory"
+      }
+      [10] = {
+        DESC = "An up-and-coming gated community that's quickly expanding. Laundry facilities near-by. Delivery available."
+        ID = "GBZomburbia"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Coop_Zomburbia"
+        NAME = "Frontline Flats"
+      }
+      [11] = {
+        DESC = "Emerging from the depths below, the Zombies are launching an all out attack on the Great White North.  Can they free the Yeti King and usher in a new ice age?"
+        ID = "GnGSnow"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Rush_Snow"
+        NAME = "Great White North"
+      }
+      [12] = {
+        DESC = "The time travel theme park was built in 1202 by a group of wizards that pooled their resources together in the hopes of making a fortune.  Now the Zombies want it, because it's a fun place to be!"
+        ID = "GnGThemepark"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Rush_ThemePark"
+        NAME = "Seeds of Time"
+      }
+      [13] = {
+        DESC = "It's that time of year again.  The next batch of fresh Zombie recruits are about to graduate, but the Plants have other plans for them... Hint:  It involves toilet paper!"
+        ID = "HerbalZomburbia"
+        LOAD = "_pvz/UI/Assets/LoadScreen_Rush_Zomburbia"
+        NAME = "Zomburbia"
+      }
+      [14] = {
+        DESC = "Expeditions to the Gnomiverse XL don't go without their confrontations. It's time for newly upgraded Mechanical Cats to go head to head with Mechanical Dinosaurs in an all out battle of attrition."
+        ID = "tournament"
+        LOAD = "_pvz/UI/Assets/LoadScreen_CP_CatsVsDinos"
+        NAME = "Cats vs. Dinos"
+      }
+    ]
+    SCEN = [
+      [0] = "findDedicated1"
+      [1] = "findDedicated2"
+    ]
+  }
+]

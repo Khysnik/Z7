@@ -1,0 +1,199 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Util"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 9,
+  "Name": "UtilComponent",
+  "ShortName": "Util",
+  "ErrorCodes": {
+    "100": "UTIL_CONFIG_NOT_FOUND",
+    "101": "UTIL_PSU_LIMIT_EXCEEDED",
+    "102": "UTIL_SERVICENAME_NOT_SPECIFIED",
+    "103": "UTIL_SERVICENAME_NOT_HOSTED",
+    "104": "UTIL_CALLER_PLATFORM_NOT_FOUND",
+    "105": "UTIL_CALLER_PLATFORM_MISMATCH",
+    "106": "UTIL_CALLER_PLATFORM_NOT_ALLOWED",
+    "150": "UTIL_TELEMETRY_NO_SERVERS_AVAILABLE",
+    "151": "UTIL_TELEMETRY_OUT_OF_MEMORY",
+    "152": "UTIL_TELEMETRY_KEY_TOO_LONG",
+    "155": "UTIL_TICKER_NO_SERVERS_AVAILABLE",
+    "156": "UTIL_TICKER_KEY_TOO_LONG",
+    "200": "UTIL_USS_RECORD_NOT_FOUND",
+    "201": "UTIL_USS_TOO_MANY_KEYS",
+    "202": "UTIL_USS_DB_ERROR",
+    "250": "UTIL_USS_USER_NO_EXTENDED_DATA",
+    "300": "UTIL_SUSPEND_PING_TIME_TOO_LARGE",
+    "301": "UTIL_SUSPEND_PING_TIME_TOO_SMALL"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "fetchClientConfig",
+      "RequestType": "FetchClientConfigRequest",
+      "ResponseType": "FetchConfigResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "ping",
+      "RequestType": null,
+      "ResponseType": "PingResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "setClientData",
+      "RequestType": "ClientData",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "localizeStrings",
+      "RequestType": "LocalizeStringsRequest",
+      "ResponseType": "LocalizeStringsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "getTelemetryServer",
+      "RequestType": "GetTelemetryServerRequest",
+      "ResponseType": "GetTelemetryServerResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "getTickerServer",
+      "RequestType": null,
+      "ResponseType": "GetTickerServerResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 7,
+      "Name": "preAuth",
+      "RequestType": "PreAuthRequest",
+      "ResponseType": "PreAuthResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 8,
+      "Name": "postAuth",
+      "RequestType": "PostAuthRequest",
+      "ResponseType": "PostAuthResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "userSettingsLoad",
+      "RequestType": "UserSettingsLoadRequest",
+      "ResponseType": "UserSettingsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 11,
+      "Name": "userSettingsSave",
+      "RequestType": "UserSettingsSaveRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 12,
+      "Name": "userSettingsLoadAll",
+      "RequestType": null,
+      "ResponseType": "UserSettingsLoadAllResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 13,
+      "Name": "userSettingsLoadAllForUserId",
+      "RequestType": "UserSettingsLoadAllRequest",
+      "ResponseType": "UserSettingsLoadAllResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 14,
+      "Name": "deleteUserSettings",
+      "RequestType": "DeleteUserSettingsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 15,
+      "Name": "userSettingsLoadMultiple",
+      "RequestType": "UserSettingsLoadMultipleRequest",
+      "ResponseType": "UserSettingsLoadMultipleResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 20,
+      "Name": "filterForProfanity",
+      "RequestType": "FilterUserTextResponse",
+      "ResponseType": "FilterUserTextResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 21,
+      "Name": "fetchQosConfig",
+      "RequestType": null,
+      "ResponseType": "QosConfigInfo",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 22,
+      "Name": "setClientMetrics",
+      "RequestType": "ClientMetrics",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 23,
+      "Name": "setConnectionState",
+      "RequestType": "SetConnectionStateRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 25,
+      "Name": "getUserOptions",
+      "RequestType": "GetUserOptionsRequest",
+      "ResponseType": "UserOptions",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 26,
+      "Name": "setUserOptions",
+      "RequestType": "UserOptions",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 27,
+      "Name": "suspendUserPing",
+      "RequestType": "SuspendUserPingRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 28,
+      "Name": "setClientState",
+      "RequestType": "ClientState",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 29,
+      "Name": "setClientUserMetrics",
+      "RequestType": "ClientUserMetrics",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": [
+    {
+      "Id": 1000,
+      "Name": "UserSettingsSavedEvent",
+      "Type": null
+    }
+  ]
+}

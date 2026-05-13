@@ -1,0 +1,2 @@
+//comp=0x0004 cmd=0x0001 msgType=Reply msgNum=32  [Blaze::GameManager::CreateGameResponse]
+GID = 35204832001283 (0x00002004C3817D03)

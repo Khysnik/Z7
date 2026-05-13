@@ -1,0 +1,221 @@
+//comp=0x0805 cmd=0x0011 msgType=Reply msgNum=11  [Blaze::PvzGw::GetClientSettingsResponse]
+GENS = [
+  [0] = {
+    IDEN = "Online.TelemetryPinSettings.ServerAddress"
+    VALU = "https://pin-river.data.ea.com"
+  }
+  [1] = {
+    IDEN = "Online.TelemetryPinSettings.ServerPort"
+    VALU = "443"
+  }
+  [2] = {
+    IDEN = "Online.TelemetryPinSettings.Environment"
+    VALU = "prod"
+  }
+  [3] = {
+    IDEN = "Online.TelemetryPinSettings.TitleIdType"
+    VALU = "projectid"
+  }
+  [4] = {
+    IDEN = "Online.TelemetryPinSettings.TitleId"
+    VALU = "310695"
+  }
+  [5] = {
+    IDEN = "Online.TelemetryPinSettings.ReleaseType"
+    VALU = "prod"
+  }
+  [6] = {
+    IDEN = "Online.TelemetryPinSettings.EnableTelemetry"
+    VALU = "true"
+  }
+  [7] = {
+    IDEN = "Online.TelemetryPinSettings.EnableEventType"
+    VALU = "[('boot_start',0,true),('boot_end',1,true),('login',2,true),('logout',3,true),('error',4,false),('custom_error',5,false),('connection',6,true),('game_start',7,true),('game_end',8,true),('player_level',10,true),('milestone',11,true),('mp_match_info',12,true)]"
+  }
+  [8] = {
+    IDEN = "Online.BugSentrySettings.EnablePinTelemetry"
+    VALU = "true"
+  }
+  [9] = {
+    IDEN = "Online.MandatedVersion.Required"
+    VALU = "120"
+  }
+  [10] = {
+    IDEN = "Online.MandatedVersion.ExactMatch"
+    VALU = "true"
+  }
+  [11] = {
+    IDEN = "Online.BugSentrySettings.EnableKillswitchForCrashDumps"
+    VALU = "true"
+  }
+  [12] = {
+    IDEN = "Online.BugSentrySettings.EnableCrashDumps"
+    VALU = "true"
+  }
+  [13] = {
+    IDEN = "Online.ForceDisableTrial"
+    VALU = "false"
+  }
+  [14] = {
+    IDEN = "Online.ForceEndTrial"
+    VALU = "false"
+  }
+  [15] = {
+    IDEN = "Online.TrialComingSoon"
+    VALU = "false"
+  }
+  [16] = {
+    IDEN = "Online.PurchaseCoinsButtonEnabled"
+    VALU = "true"
+  }
+  [17] = {
+    IDEN = "Online.PurchaseCoinsButtonEnabled"
+    VALU = "true"
+  }
+  [18] = {
+    IDEN = "Online.PurchaseCoinsButtonLicenseOverride"
+    VALU = "_ejEWJ6TYgkKX9T"
+  }
+  [19] = {
+    IDEN = "Network.MLUREnabled"
+    VALU = "true"
+  }
+  [20] = {
+    IDEN = "PVZServerGame.KillSwitches.MenchiesChallengeLicense"
+    VALU = "menchiesenabled"
+  }
+  [21] = {
+    IDEN = "PVZServerGame.KillSwitches.BlackMarketGnomeLicense"
+    VALU = "_aLcHB0sy_kyJdb"
+  }
+  [22] = {
+    IDEN = "PVZServerGame.KillSwitches.PlantTimeTrialsLicense"
+    VALU = "ptimechallenge"
+  }
+  [23] = {
+    IDEN = "PVZServerGame.KillSwitches.ZombieTimeTrialsLicense"
+    VALU = "ztimechallenge"
+  }
+  [24] = {
+    IDEN = "PVZServerGame.KillSwitches.PlantGnomeTargetsMinigameLicense"
+    VALU = "_aLcHB0sy_kyJdb"
+  }
+  [25] = {
+    IDEN = "PVZServerGame.KillSwitches.ZombieGnomeTargetsMinigameLicense"
+    VALU = "_aLcHB0sy_kyJdb"
+  }
+  [26] = {
+    IDEN = "PVZServerGame.KillSwitches.GnomeTargetsLeaderboardLicense"
+    VALU = "_aLcHB0sy_kyJdb"
+  }
+  [27] = {
+    IDEN = "PVZServerGame.KillSwitches.Halloween2016License"
+    VALU = "doom2016"
+  }
+  [28] = {
+    IDEN = "PVZServerGame.KillSwitches.Halloween2017License"
+    VALU = "doom2017"
+  }
+  [29] = {
+    IDEN = "PVZServerGame.KillSwitches.Festivus2016License"
+    VALU = "festive2016"
+  }
+  [30] = {
+    IDEN = "PVZServerGame.KillSwitches.Festivus2017License"
+    VALU = "festive2017"
+  }
+  [31] = {
+    IDEN = "PVZServerGame.KillSwitches.Springening2017License"
+    VALU = "springen2017"
+  }
+  [32] = {
+    IDEN = "PVZServerGame.KillSwitches.LuckOZombie2017License"
+    VALU = "lucko2017"
+  }
+  [33] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek1"
+    VALU = "2019festweek1"
+  }
+  [34] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek2"
+    VALU = "2019festweek2"
+  }
+  [35] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek3"
+    VALU = "2019festweek3"
+  }
+  [36] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek4"
+    VALU = "2019festweek4"
+  }
+  [37] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek5"
+    VALU = "2019festweek5"
+  }
+  [38] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek6"
+    VALU = "2019festweek6"
+  }
+  [39] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek7"
+    VALU = "2019festweek7"
+  }
+  [40] = {
+    IDEN = "PVZServerGame.KillSwitches.FestivalWeek8"
+    VALU = "2019festweek8"
+  }
+  [41] = {
+    IDEN = "PVZServerGame.KillSwitches.UnderageLicense"
+    VALU = "underagedisable"
+  }
+  [42] = {
+    IDEN = "PVZServerGame.KillSwitches.GdprStopProcessLicense"
+    VALU = "gdprdisable"
+  }
+  [43] = {
+    IDEN = "PVZServerGame.KillSwitches.MarketingOptOutLicense"
+    VALU = "marketdisable"
+  }
+  [44] = {
+    IDEN = "PVZServerGame.KillSwitches.UpsellDisable"
+    VALU = "upselldisable"
+  }
+  [45] = {
+    IDEN = "PVZServerGame.KillSwitches.LoyaltyDisable"
+    VALU = "loyaltydisable"
+  }
+  [46] = {
+    IDEN = "PVZServerGame.KillSwitches.AccessDisable"
+    VALU = "accessdisable"
+  }
+  [47] = {
+    IDEN = "PVZServerGame.ConsumableLimits.RainbowStarLimit"
+    VALU = "50"
+  }
+  [48] = {
+    IDEN = "PVZServerGame.ConsumableConversionRates.StarToRainbowStar"
+    VALU = "7"
+  }
+  [49] = {
+    IDEN = "PVZServerGame.CommunityPortal.UnderworldMegaChestCost"
+    VALU = "15"
+  }
+  [50] = {
+    IDEN = "Online.TournamentSettings.TournamentGameRequestMaxRetry"
+    VALU = "1"
+  }
+  [51] = {
+    IDEN = "Online.TournamentSettings.TournamentGameRequestMaxTimeout"
+    VALU = "5"
+  }
+  [52] = {
+    IDEN = "Online.TournamentSettings.TournamentGlobalKillSwitch"
+    VALU = "false"
+  }
+]
+PACF = {
+  CSUM = 0 (0x0000)
+  PRSF = ""
+  PSTA = 0 (0x0000)
+  PURL = ""
+}

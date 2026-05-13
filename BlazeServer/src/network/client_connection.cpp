@@ -63,15 +63,14 @@ void ClientConnection::sendPacket(const blaze::Packet& packet) {
     
     std::vector<uint8_t> data = packet.serialize();
     
-    LOG_INFO("[blaze] << comp=0x{:04X} cmd=0x{:04X} len={}",
-             static_cast<uint16_t>(packet.getComponent()),
-             packet.getCommand(),
-             data.size());
     {
+        auto msgType = packet.getMessageType();
+        bool isNotif = (msgType == blaze::MessageType::Notification);
+        std::string name = blaze::blazePacketName(
+            static_cast<uint16_t>(packet.getComponent()), packet.getCommand(), msgType);
         auto tdf = packet.getPayloadAsTdf();
-        if (!tdf.empty()) {
-            LOG_INFO("[Conn:{}] << TDF:\n{}", m_connectionId, blaze::tdfToXml(tdf));
-        }
+        std::string body = tdf.empty() ? "" : "\n" + blaze::tdfToBlaze(tdf);
+        LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
     }
     
     {
@@ -167,8 +166,7 @@ void ClientConnection::handleReadHeader(const asio::error_code& error, size_t by
         LOG_DEBUG("[blaze] >> raw: {}", hexbuf);
     }
 
-    LOG_INFO("[blaze] >> comp=0x{:04X} cmd=0x{:04X} type={} msgNum={} len={}",
-             component, command, (uint32_t)msgType, msgNum, payloadLen);
+    (void)msgNum;
 
     uint32_t totalPayload = (uint32_t)metadataLen + payloadLen;
     if (totalPayload > 65536) {
@@ -181,7 +179,8 @@ void ClientConnection::handleReadHeader(const asio::error_code& error, size_t by
         doReadPayload(totalPayload);
     }
     else {
-        // No payload, process packet now
+        // No payload — log and dispatch
+        LOG_INFO("[recv] >> {}", blaze::blazePacketName(component, command, blaze::MessageType::Message));
         auto packet = blaze::Packet::parse(m_headerBuffer);
         if (packet && m_packetHandler) {
             m_packetHandler(shared_from_this(), std::move(packet));
@@ -239,10 +238,11 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     // Parse and handle packet
     auto packet = blaze::Packet::parse(fullPacket);
     if (packet) {
+        std::string name = blaze::blazePacketName(
+            static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), blaze::MessageType::Message);
         auto tdf = packet->getPayloadAsTdf();
-        if (!tdf.empty()) {
-            LOG_INFO("[Conn:{}] >> TDF:\n{}", m_connectionId, blaze::tdfToXml(tdf));
-        }
+        std::string body = tdf.empty() ? "" : "\n" + blaze::tdfToBlaze(tdf);
+        LOG_INFO("[recv] >> {}{}", name, body);
         if (m_packetHandler) {
             m_packetHandler(shared_from_this(), std::move(packet));
         }

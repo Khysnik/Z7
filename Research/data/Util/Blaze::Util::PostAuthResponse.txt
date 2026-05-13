@@ -1,0 +1,27 @@
+//comp=0x0009 cmd=0x0008 msgType=Reply msgNum=4  [Blaze::Util::PostAuthResponse]
+TELE = {
+  ADRS = "https://river.data.ea.com"
+  ANON = 0 (0x0000)
+  DISA = ""
+  EDCT = 0 (0x0000)
+  FILT = "-UION/****"
+  LOC = 3403459219 (0xCADCAA93)
+  MINR = 0 (0x0000)
+  NOOK = ""
+  PORT = 827 (0x033B)
+  SDLY = 29976 (0x7518)
+  SESS = "Qa8AqZFw1/G"
+  SKEY = "<redacted>"
+  SPCT = 139 (0x008B)
+  STIM = "Default"
+  SVNM = "telemetry-3-common"
+}
+TICK = {
+  ADRS = "10.10.78.150"
+  PORT = 17959 (0x4627)
+  SKEY = "<redacted>"
+}
+UROP = {
+  TMOP = 0 (0x0000)
+  UID = <redacted>
+}

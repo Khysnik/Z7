@@ -1,0 +1,127 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Association"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 25,
+  "Name": "AssociationListsComponent",
+  "ShortName": "AssociationLists",
+  "ErrorCodes": {
+    "1": "ASSOCIATIONLIST_ERR_USER_NOT_FOUND",
+    "2": "ASSOCIATIONLIST_ERR_DUPLICATE_USER_FOUND",
+    "3": "ASSOCIATIONLIST_ERR_CANNOT_INCLUDE_SELF",
+    "4": "ASSOCIATIONLIST_ERR_INVALID_USER",
+    "5": "ASSOCIATIONLIST_ERR_MEMBER_ALREADY_IN_THE_LIST",
+    "6": "ASSOCIATIONLIST_ERR_MEMBER_NOT_FOUND_IN_THE_LIST",
+    "10": "ASSOCIATIONLIST_ERR_LIST_NOT_FOUND",
+    "11": "ASSOCIATIONLIST_ERR_LIST_IS_FULL_OR_TOO_MANY_USERS",
+    "16": "ASSOCIATIONLIST_ERR_PAIRED_LIST_MODIFICATION_NOT_SUPPORTED",
+    "17": "ASSOCIATIONLIST_ERR_PAIRED_LIST_IS_FULL_OR_TOO_MANY_USERS",
+    "18": "ASSOCIATIONLIST_ERR_SUBSCRIBE_USER_LIST_NOT_SUPPORTED"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "addUsersToList",
+      "RequestType": "UpdateListMembersRequest",
+      "ResponseType": "UpdateListMembersResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "removeUsersFromList",
+      "RequestType": "UpdateListMembersRequest",
+      "ResponseType": "UpdateListMembersResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "clearLists",
+      "RequestType": "UpdateListsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "setUsersToList",
+      "RequestType": "UpdateListMembersRequest",
+      "ResponseType": "UpdateListMembersResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "getListForUser",
+      "RequestType": "GetListForUserRequest",
+      "ResponseType": "ListMembers",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "getLists",
+      "RequestType": "GetListsRequest",
+      "ResponseType": "Lists",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 7,
+      "Name": "subscribeToLists",
+      "RequestType": "UpdateListsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 8,
+      "Name": "unsubscribeFromLists",
+      "RequestType": "UpdateListsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 9,
+      "Name": "getConfigListsInfo",
+      "RequestType": null,
+      "ResponseType": "ConfigLists",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "getMemberHash",
+      "RequestType": "GetMemberHashRequest",
+      "ResponseType": "GetMemberHashResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 11,
+      "Name": "checkListMembership",
+      "RequestType": "CheckListMembershipRequest",
+      "ResponseType": "ListBlazeIds",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 12,
+      "Name": "checkListContainsMembers",
+      "RequestType": "CheckListContainsMembersRequest",
+      "ResponseType": "ListBlazeIds",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 13,
+      "Name": "setUsersAttributesInList",
+      "RequestType": "UpdateListMembersRequest",
+      "ResponseType": "UpdateListMembersResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": [
+    {
+      "Id": 100,
+      "Name": "NotifyUpdateListMembership",
+      "Type": "UpdateListMembersResponse"
+    },
+    {
+      "Id": 101,
+      "Name": "NotifyUpdateListMembershipSlave",
+      "Type": "UpdateListMembersResponse"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+namespace Blaze15SDK.Blaze.Clubs;
+
+public enum ClubConfigParams : int
+{
+    CLUBS_MAX_MEMBER_COUNT,
+    CLUBS_MAX_GM_COUNT,
+    CLUBS_MAX_DIVISION_SIZE,
+    CLUBS_MAX_NEWS_COUNT,
+    CLUBS_MAX_INVITE_COUNT,
+    CLUBS_MAX_INACTIVE_DAYS,
+    CLUBS_PURGE_HOUR,
+}

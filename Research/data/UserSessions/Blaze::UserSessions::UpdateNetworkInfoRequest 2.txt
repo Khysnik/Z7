@@ -1,0 +1,34 @@
+//comp=0x7802 cmd=0x0014 msgType=Message msgNum=7  [Blaze::UserSessions::UpdateNetworkInfoRequest]
+INFO = {
+  ADDR = {
+    VALU = {
+      EXIP = {
+        IP = 2499368075 (0x94F9548B)
+        MACI = 0 (0x0000)
+        PORT = 13233 (0x33B1)
+      }
+      INIP = {
+        IP = 6464471575 (0x0000000181500217)
+        MACI = 0 (0x0000)
+        PORT = 7307 (0x1C8B)
+      }
+      MACI = 3310897674 (0xC5584A0A)
+    }
+  }
+  NLMP = [
+    ("bio-dub", 286 (0x011E))
+    ("bio-iad", 53 (0x0035))
+    ("bio-sjc", 261 (0x0105))
+    ("bio-syd", 515 (0x0203))
+    ("i3d-gru", 302 (0x012E))
+    ("i3d-nrt", 386 (0x0182))
+  ]
+  NQOS = {
+    BWHR = 1090912257 (0x41060001)
+    DBPS = 13714230 (0x00D14336)
+    NAHR = 1090912257 (0x41060001)
+    NATT = 3 (0x0003)
+    UBPS = 7680000 (0x00753000)
+  }
+}
+OPTS = 4 (0x0004)

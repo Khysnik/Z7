@@ -1,0 +1,2 @@
+//comp=0x0805 cmd=0x0002 msgType=Reply msgNum=23  [Blaze::PvzGw::CheckUserMessagesResponse]
+PEID = 0 (0x0000)

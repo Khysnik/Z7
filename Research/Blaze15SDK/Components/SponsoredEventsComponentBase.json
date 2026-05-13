@@ -1,0 +1,95 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.SponsoredEvents"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 2076,
+  "Name": "SponsoredEventsComponent",
+  "ShortName": "SponsoredEvents",
+  "ErrorCodes": {
+    "1": "SPONSORED_EVENTS_ERR_GENERAL",
+    "2": "SPONSORED_EVENTS_ERR_DB",
+    "3": "SPONSORED_EVENTS_ERR_INVALID_PARAMS",
+    "4": "SPONSORED_EVENTS_ERR_NO_UPDATE"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "checkUserRegistration",
+      "RequestType": "CheckUserRegistrationRequest",
+      "ResponseType": "CheckUserRegistrationResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "registerUser",
+      "RequestType": "RegisterUserRequest",
+      "ResponseType": "RegisterUserResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "getEventsURL",
+      "RequestType": null,
+      "ResponseType": "URLResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "banUser",
+      "RequestType": "BanUserRequest",
+      "ResponseType": "BanUserResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "wipeUserStats",
+      "RequestType": "WipeUserStatsRequest",
+      "ResponseType": "WipeUserStatsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "updateUserFlags",
+      "RequestType": "UpdateUserFlagsRequest",
+      "ResponseType": "UpdateUserFlagsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 7,
+      "Name": "numUsers",
+      "RequestType": "NumUsersRequest",
+      "ResponseType": "NumUsersResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 8,
+      "Name": "removeUser",
+      "RequestType": "RemoveUserRequest",
+      "ResponseType": "RemoveUserResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 9,
+      "Name": "updateEventData",
+      "RequestType": "UpdateEventDataRequest",
+      "ResponseType": "UpdateEventDataResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "getDbCredentials",
+      "RequestType": null,
+      "ResponseType": "DbCredentialsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 11,
+      "Name": "returnUsers",
+      "RequestType": "ReturnUsersRequest",
+      "ResponseType": "ReturnUsersResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

@@ -1,0 +1,58 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.DynamicInetFilter"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 30732,
+  "Name": "DynamicInetFilterComponent",
+  "ShortName": "DynamicInetFilter",
+  "ErrorCodes": {
+    "1": "DYNAMICINETFILTER_ERR_ROW_NOT_FOUND",
+    "2": "DYNAMICINETFILTER_ERR_INVALID_GROUP",
+    "3": "DYNAMICINETFILTER_ERR_INVALID_OWNER",
+    "4": "DYNAMICINETFILTER_ERR_INVALID_SUBNET",
+    "5": "DYNAMICINETFILTER_ERR_INVALID_COMMENT"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "add",
+      "RequestType": "AddRequest",
+      "ResponseType": "AddResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "update",
+      "RequestType": "UpdateRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "remove",
+      "RequestType": "RemoveRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "listInfo",
+      "RequestType": "ListRequest",
+      "ResponseType": "ListResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": [
+    {
+      "Id": 1,
+      "Name": "AddOrUpdateNotification",
+      "Type": "Entry"
+    },
+    {
+      "Id": 2,
+      "Name": "RemoveNotification",
+      "Type": "RemoveRequest"
+    }
+  ]
+}

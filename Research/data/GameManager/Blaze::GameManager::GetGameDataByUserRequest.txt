@@ -1,0 +1,14 @@
+//comp=0x0004 cmd=0x0071 msgType=Message msgNum=58  [Blaze::GameManager::GetGameDataByUserRequest]
+DNAM = "worldOptionsList"
+GRP = (0.0.0.25:1, proto=32918)
+USER = {
+  AID = 0 (0x0000)
+  ALOC = 0 (0x0000)
+  EXBB = []
+  EXID = 0 (0x0000)
+  ID = 0 (0x0000)
+  NAME = ""
+  NASP = ""
+  ORIG = 0 (0x0000)
+  PIDI = 0 (0x0000)
+}

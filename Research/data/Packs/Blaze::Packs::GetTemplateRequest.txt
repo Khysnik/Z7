@@ -1,0 +1,2 @@
+//comp=0x0802 cmd=0x0006 msgType=Message msgNum=29  [Blaze::Packs::GetTemplateRequest]
+IHID = 0 (0x0000)

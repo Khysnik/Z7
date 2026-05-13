@@ -1,0 +1,39 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Achievements"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 33,
+  "Name": "AchievementsComponent",
+  "ShortName": "Achievements",
+  "ErrorCodes": {
+    "1": "ACHIEVEMENTS_ERR_INVALID_PARAMETER",
+    "2": "ACHIEVEMENTS_ERR_INVALID_CREDENTIALS",
+    "3": "ACHIEVEMENTS_ERR_NOT_AUTHORIZED",
+    "4": "ACHIEVEMENTS_ERR_NOT_ALLOWED"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "getAchievements",
+      "RequestType": "GetAchievementsRequest",
+      "ResponseType": "GetAchievementsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "grantAchievement",
+      "RequestType": "GrantAchievementRequest",
+      "ResponseType": "AchievementData",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "postEvents",
+      "RequestType": "PostEventsRequest",
+      "ResponseType": "GetAchievementsResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

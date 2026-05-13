@@ -1,0 +1,31 @@
+//comp=0x7802 cmd=0x0002 msgType=Notification msgNum=0  [Blaze::UserSessions::UserAdded]
+DATA = {
+  ADDR = {
+  }
+  BPS = ""
+  CTY = ""
+  CVAR = [
+  ]
+  HWFG = 0 (0x0000)
+  ISP = ""
+  QDAT = {
+    BWHR = 0 (0x0000)
+    DBPS = 0 (0x0000)
+    NAHR = 0 (0x0000)
+    NATT = 0 (0x0000)
+    UBPS = 0 (0x0000)
+  }
+  TZ = ""
+  UATT = 0 (0x0000)
+}
+USER = {
+  AID = <redacted>
+  ALOC = 3772289669 (0xE0D89285)
+  EXBB = []
+  EXID = <redacted>
+  ID = <redacted>
+  NAME = "<redacted>"
+  NASP = "cem_ea_id"
+  ORIG = <redacted>
+  PIDI = <redacted>
+}

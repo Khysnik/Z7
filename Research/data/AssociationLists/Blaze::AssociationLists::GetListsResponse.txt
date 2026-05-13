@@ -1,0 +1,111 @@
+//comp=0x0019 cmd=0x0006 msgType=Reply msgNum=31  [Blaze::AssociationLists::GetListsResponse]
+LMAP = [
+  [0] = {
+    INFO = {
+      BOID = (0.0.0.25:1, proto=32918)
+      FLGS = 4 (0x0004)
+      LID = {
+        LNM = "friendList"
+        TYPE = 1 (0x0001)
+      }
+      LMS = 164 (0x00A4)
+      PNAM = ""
+      PRID = 0 (0x0000)
+      PRMS = 0 (0x0000)
+    }
+    MEML = [
+      [0] = {
+        LMID = {
+          ATTR = 0 (0x0000)
+          PLAT = 4 (0x0004)
+          USER = {
+            EXBB = []
+            EXID = <redacted>
+            ID = <redacted>
+            NAME = <redacted>x
+            NASP = "cem_ea_id"
+          }
+        }
+        TIME = 3386318503 (0xC9D71EA7)
+      }
+      [1] = {
+        LMID = {
+          ATTR = 0 (0x0000)
+          PLAT = 4 (0x0004)
+          USER = {
+            EXBB = []
+            EXID = <redacted>
+            ID = <redacted>
+            NAME = <redacted>
+            NASP = "cem_ea_id"
+          }
+        }
+        TIME = 3444087063 (0xCD489917)
+      }
+      [2] = {
+        LMID = {
+          ATTR = 0 (0x0000)
+          PLAT = 4 (0x0004)
+          USER = {
+            EXBB = []
+            EXID = <redacted>
+            ID = <redacted>
+            NAME = <redacted>
+            NASP = "cem_ea_id"
+          }
+        }
+        TIME = 3452387592 (0xCDC74108)
+      }
+    ]
+    OFRC = 0 (0x0000)
+    TOCT = 3 (0x0003)
+  }
+  [1] = {
+    INFO = {
+      BOID = (0.0.0.25:2, proto=32918)
+      FLGS = 2 (0x0002)
+      LID = {
+        LNM = "recentPlayerList"
+        TYPE = 2 (0x0002)
+      }
+      LMS = 164 (0x00A4)
+      PNAM = ""
+      PRID = 0 (0x0000)
+      PRMS = 0 (0x0000)
+    }
+    OFRC = 0 (0x0000)
+    TOCT = 0 (0x0000)
+  }
+  [2] = {
+    INFO = {
+      BOID = (0.0.0.25:3, proto=32918)
+      FLGS = 2 (0x0002)
+      LID = {
+        LNM = "persistentMuteList"
+        TYPE = 3 (0x0003)
+      }
+      LMS = 164 (0x00A4)
+      PNAM = ""
+      PRID = 0 (0x0000)
+      PRMS = 0 (0x0000)
+    }
+    OFRC = 0 (0x0000)
+    TOCT = 0 (0x0000)
+  }
+  [3] = {
+    INFO = {
+      BOID = (0.0.0.25:4, proto=32918)
+      FLGS = 0 (0x0000)
+      LID = {
+        LNM = "communicationBlockList"
+        TYPE = 4 (0x0004)
+      }
+      LMS = 164 (0x00A4)
+      PNAM = ""
+      PRID = 0 (0x0000)
+      PRMS = 0 (0x0000)
+    }
+    OFRC = 0 (0x0000)
+    TOCT = 0 (0x0000)
+  }
+]

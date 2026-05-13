@@ -1,0 +1,11 @@
+//comp=0x0007 cmd=0x0010 msgType=Message msgNum=41  [Blaze::Stats::GetStatsByGroupAsyncRequest]
+EID = [
+  [0] = <redacted>
+]
+NAME = "player_mpdefault"
+PCTR = 1 (0x0001)
+POFF = 0 (0x0000)
+PRID = 0 (0x0000)
+PTYP = 0 (0x0000)
+TIME = 0 (0x0000)
+VID = 1 (0x0001)

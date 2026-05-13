@@ -1,0 +1,2 @@
+//comp=0x7802 cmd=0x0008 msgType=Message msgNum=6  [Blaze::UserSessions::UpdateHardwareFlagsRequest]
+HWFG = 0 (0x0000)

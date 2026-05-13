@@ -1,0 +1,57 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.CensusData"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 10,
+  "Name": "CensusDataComponent",
+  "ShortName": "CensusData",
+  "ErrorCodes": {
+    "1": "CENSUSDATA_ERR_PLAYER_ALREADY_SUBSCRIBED",
+    "2": "CENSUSDATA_ERR_PLAYER_NOT_SUBSCRIBED"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "subscribeToCensusData",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "unsubscribeFromCensusData",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "getRegionCounts",
+      "RequestType": null,
+      "ResponseType": "RegionCounts",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "getLatestCensusData",
+      "RequestType": null,
+      "ResponseType": "NotifyServerCensusData",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "subscribeToCensusDataUpdates",
+      "RequestType": "SubscribeToCensusDataUpdatesRequest",
+      "ResponseType": "SubscribeToCensusDataUpdatesResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": [
+    {
+      "Id": 1,
+      "Name": "NotifyServerCensusData",
+      "Type": "NotifyServerCensusData"
+    }
+  ]
+}

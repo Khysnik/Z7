@@ -1,0 +1,22 @@
+//comp=0x0009 cmd=0x0007 msgType=Message msgNum=0  [Blaze::Util::PreAuthRequest]
+CDAT = {
+  IITO = 0 (0x0000)
+  LANG = 3403459219 (0xCADCAA93)
+  SVCN = "plantsvszombies-gw2-pc"
+  TYPE = 0 (0x0000)
+}
+CINF = {
+  BSDK = "15.1.1.1.0"
+  BTIM = "Dec 19 2023 15:25:32"
+  CLNT = "pvz client"
+  CPFT = 4 (0x0004)
+  CSKU = "pc"
+  CVER = "gw2-shipping-pc3644673retail-x64-1.0-66"
+  DSDK = "15.1.1.1.0"
+  ENV = "prod"
+  LOC = 3403459219 (0xCADCAA93)
+}
+FCCR = {
+  CFID = "BlazeSDK"
+}
+LADD = 771969408 (0x2E035180)

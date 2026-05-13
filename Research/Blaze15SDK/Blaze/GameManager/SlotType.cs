@@ -1,0 +1,12 @@
+namespace Blaze15SDK.Blaze.GameManager;
+
+public enum SlotType : int
+{
+    SLOT_PUBLIC_PARTICIPANT = 0x00,
+    SLOT_PRIVATE_PARTICIPANT = 0x001,
+    SLOT_PUBLIC_SPECTATOR = 0x02,
+    SLOT_PRIVATE_SPECTATOR = 0x03,
+    MAX_SLOT_TYPE,
+    MAX_PARTICIPANT_SLOT_TYPE = 0x02,
+    INVALID_SLOT_TYPE = -1,
+}

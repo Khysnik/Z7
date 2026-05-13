@@ -1,0 +1,344 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Stats"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 7,
+  "Name": "StatsComponent",
+  "ShortName": "Stats",
+  "ErrorCodes": {
+    "1": "STATS_ERR_CONFIG_NOTAVAILABLE",
+    "2": "STATS_ERR_INVALID_LEADERBOARD_ID",
+    "3": "STATS_ERR_INVALID_FOLDER_ID",
+    "4": "STATS_ERR_UNKNOWN_CATEGORY",
+    "5": "STATS_ERR_STAT_NOT_FOUND",
+    "6": "STATS_ERR_BAD_PERIOD_TYPE",
+    "7": "STATS_ERR_NO_DB_CONNECTION",
+    "8": "STATS_ERR_DB_DATA_NOT_AVAILABLE",
+    "9": "STATS_ERR_UNKNOWN_STAT_GROUP",
+    "10": "STATS_ERR_DB_TRANSACTION_ERROR",
+    "11": "STATS_ERR_INVALID_UPDATE_TYPE",
+    "13": "STATS_ERR_DB_QUERY_FAILED",
+    "14": "STATS_ERR_RANK_OUT_OF_RANGE",
+    "15": "STATS_ERR_BAD_PERIOD_OFFSET",
+    "16": "STATS_ERR_BAD_SCOPE_INFO",
+    "17": "STATS_ERR_INVALID_FOLDER_NAME",
+    "18": "STATS_ERR_OPERATION_IN_PROGRESS",
+    "20": "STATS_ERR_INVALID_OPERATION",
+    "21": "STATS_ERR_INVALID_OBJECT_ID",
+    "22": "STATS_ERR_BAD_PERIOD_COUNTER",
+    "23": "STATS_ERR_LEADERBOARD_NOT_IN_MEMORY"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "getStatDescs",
+      "RequestType": "GetStatDescsRequest",
+      "ResponseType": "StatDescs",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "getStats",
+      "RequestType": "GetStatsRequest",
+      "ResponseType": "GetStatsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "getStatGroupList",
+      "RequestType": null,
+      "ResponseType": "StatGroupList",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "getStatGroup",
+      "RequestType": "GetStatGroupRequest",
+      "ResponseType": "StatGroupResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "getStatsByGroup",
+      "RequestType": "GetStatsByGroupRequest",
+      "ResponseType": "GetStatsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "getDateRange",
+      "RequestType": "GetDateRangeRequest",
+      "ResponseType": "DateRange",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 7,
+      "Name": "getEntityCount",
+      "RequestType": "GetEntityCountRequest",
+      "ResponseType": "EntityCount",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 8,
+      "Name": "updateStats",
+      "RequestType": "UpdateStatsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 9,
+      "Name": "wipeStats",
+      "RequestType": "WipeStatsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "getLeaderboardGroup",
+      "RequestType": "LeaderboardGroupRequest",
+      "ResponseType": "LeaderboardGroupResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 11,
+      "Name": "getLeaderboardFolderGroup",
+      "RequestType": "LeaderboardFolderGroupRequest",
+      "ResponseType": "LeaderboardFolderGroup",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 12,
+      "Name": "getLeaderboard",
+      "RequestType": "LeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 13,
+      "Name": "getCenteredLeaderboard",
+      "RequestType": "CenteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 14,
+      "Name": "getFilteredLeaderboard",
+      "RequestType": "FilteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 15,
+      "Name": "getKeyScopesMap",
+      "RequestType": null,
+      "ResponseType": "KeyScopes",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 16,
+      "Name": "getStatsByGroupAsync",
+      "RequestType": "GetStatsByGroupRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 17,
+      "Name": "getLeaderboardTreeAsync",
+      "RequestType": "GetLeaderboardTreeRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 18,
+      "Name": "getLeaderboardEntityCount",
+      "RequestType": "LeaderboardEntityCountRequest",
+      "ResponseType": "EntityCount",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 19,
+      "Name": "getStatCategoryList",
+      "RequestType": null,
+      "ResponseType": "StatCategoryList",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 20,
+      "Name": "getPeriodIds",
+      "RequestType": null,
+      "ResponseType": "PeriodIds",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 21,
+      "Name": "getLeaderboardRaw",
+      "RequestType": "LeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 22,
+      "Name": "getCenteredLeaderboardRaw",
+      "RequestType": "CenteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 23,
+      "Name": "getFilteredLeaderboardRaw",
+      "RequestType": "FilteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 24,
+      "Name": "changeKeyscopeValue",
+      "RequestType": "KeyScopeChangeRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 25,
+      "Name": "getEntityRank",
+      "RequestType": "FilteredLeaderboardStatsRequest",
+      "ResponseType": "GetEntityRankResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 26,
+      "Name": "initializeStatsTransaction",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 27,
+      "Name": "commitStatsTransaction",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 28,
+      "Name": "abortStatsTransaction",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 29,
+      "Name": "calcDerivedStats",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 30,
+      "Name": "retrieveValuesStats",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 162,
+      "Name": "getStatsByGroupAsync2",
+      "RequestType": "GetStatsByGroupRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 172,
+      "Name": "getLeaderboardTreeAsync2",
+      "RequestType": "GetLeaderboardTreeRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 212,
+      "Name": "getLeaderboardRaw2",
+      "RequestType": "LeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 222,
+      "Name": "getCenteredLeaderboardRaw2",
+      "RequestType": "CenteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 232,
+      "Name": "getFilteredLeaderboardRaw2",
+      "RequestType": "FilteredLeaderboardStatsRequest",
+      "ResponseType": "LeaderboardStatValues",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "getPeriodIdsMaster",
+      "RequestType": null,
+      "ResponseType": "PeriodIds",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "populateLeaderboardIndex",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "reportGlobalCacheInstructionExecutionResult",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "initializeGlobalCache",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": [
+    {
+      "Id": 1,
+      "Name": "UpdateCacheNotification",
+      "Type": "StatUpdateNotification"
+    },
+    {
+      "Id": 2,
+      "Name": "UpdateGlobalStatsNotification",
+      "Type": "UpdateStatsRequest"
+    },
+    {
+      "Id": 50,
+      "Name": "GetStatsAsyncNotification",
+      "Type": "KeyScopedStatValues"
+    },
+    {
+      "Id": 51,
+      "Name": "GetLeaderboardTreeNotification",
+      "Type": "LeaderboardTreeNodes"
+    },
+    {
+      "Id": 4,
+      "Name": "TrimPeriodNotification",
+      "Type": "StatPeriod"
+    },
+    {
+      "Id": 5,
+      "Name": "SetPeriodIdsNotification",
+      "Type": "PeriodIds"
+    },
+    {
+      "Id": 6,
+      "Name": "ExecuteGlobalCacheInstruction",
+      "Type": "StatsGlobalCacheInstruction"
+    }
+  ]
+}

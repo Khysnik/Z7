@@ -1,0 +1,14 @@
+namespace Blaze15SDK.Blaze.GameManager;
+
+public enum PingSiteSelectionMethod : int
+{
+    INVALID_PING_SITE_SELECTION_METHOD = 0,
+    STD_DEV = 1,
+    BEST_SITE,
+    AVERAGE_SITE,
+    WORST_SITE,
+    STANDARD_DEVIATION = 1,
+    BEST_FOR_FASTEST_PLAYER,
+    AVERAGE_FOR_ALL_PLAYERS,
+    BEST_FOR_SLOWEST_PLAYER,
+}

@@ -97,6 +97,7 @@ private:
     // Decode variable-length integer
     int64_t decodeVarInt();
     uint64_t decodeVarUInt();
+    uint64_t decodeStrLen();
     
     // Decode specific types
     TdfInteger decodeInteger();
@@ -152,6 +153,7 @@ public:
     TdfBuilder& list(const std::string& tag, TdfType elementType, const std::vector<std::string>& values);
     TdfBuilder& intList(const std::string& tag, const std::vector<int64_t>& values);
     TdfBuilder& stringMap(const std::string& tag, const std::map<std::string, std::string>& values);
+    TdfBuilder& integerMap(const std::string& tag, const std::map<std::string, int64_t>& values);
 
     // Typed map: keyType/valueType are "integer","string","struct","binary","float"
     TdfBuilder& beginMap(const std::string& tag, const std::string& keyType, const std::string& valueType);
@@ -182,6 +184,7 @@ private:
 };
 
 // Render a decoded TdfStruct as indented XML for logging
-std::string tdfToXml(const TdfStruct& tdf, int indent = 0);
+std::string tdfToBlaze(const TdfStruct& tdf, int indent = 0);
+std::string blazePacketName(uint16_t comp, uint16_t cmd, MessageType msgType);
 
 } // namespace ds2::blaze

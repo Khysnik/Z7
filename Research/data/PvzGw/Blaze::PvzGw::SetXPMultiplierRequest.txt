@@ -1,0 +1,1 @@
+//comp=0x0805 cmd=0x0007 msgType=Message msgNum=12  [Blaze::PvzGw::SetXPMultiplierRequest]

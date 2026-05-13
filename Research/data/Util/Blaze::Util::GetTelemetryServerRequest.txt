@@ -1,0 +1,3 @@
+//comp=0x0009 cmd=0x0005 msgType=Message msgNum=8  [Blaze::Util::GetTelemetryServerRequest]
+CMAC = ""
+SNAM = ""

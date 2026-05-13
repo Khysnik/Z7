@@ -1,0 +1,3 @@
+//comp=0x0805 cmd=0x0014 msgType=Message msgNum=27  [Blaze::PvzGw::GetBlackMarketDataRequest]
+BLID = <redacted>
+IPID = 0 (0x0000)

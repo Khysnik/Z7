@@ -1,0 +1,2 @@
+//comp=0x0805 cmd=0x0004 msgType=Message msgNum=20  [Blaze::PvzGw::GetStoreItemListRequest]
+URMO = <redacted>

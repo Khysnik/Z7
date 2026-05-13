@@ -1,0 +1,4 @@
+//comp=0x0805 cmd=0x000E msgType=Message msgNum=28  [Blaze::PvzGw::GetUserMessagesRequest]
+FMGK = ""
+FMSG = 0 (0x0000)
+PEID = <redacted>

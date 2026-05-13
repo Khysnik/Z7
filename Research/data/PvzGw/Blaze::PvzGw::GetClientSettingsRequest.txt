@@ -1,0 +1,2 @@
+//comp=0x0805 cmd=0x0011 msgType=Message msgNum=11  [Blaze::PvzGw::GetClientSettingsRequest]
+CHAN = 7289345 (0x006F3A01)

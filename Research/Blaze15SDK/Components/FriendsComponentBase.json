@@ -1,0 +1,64 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Social.Friends"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 1031,
+  "Name": "FriendsComponent",
+  "ShortName": "Friends",
+  "ErrorCodes": {
+    "504": "FRIENDS_UNKNOWN_ERR",
+    "901": "FRIENDS_NO_SUCH_USER",
+    "909": "FRIENDS_INVALID_ARGUMENT_TYPE",
+    "11100": "FRIENDS_API_KEY_INVALID",
+    "20006": "FRIENDS_NO_ID_SPECIFIED",
+    "20007": "FRIENDS_NO_FRIEND_SPECIFIED",
+    "20008": "FRIENDS_BAD_PRIVACY_SETTING",
+    "22001": "FRIENDS_FRIENDS_LIST_FULL",
+    "22002": "FRIENDS_NO_GROUP_NAME_SPECIFIED",
+    "22003": "FRIENDS_GLOBAL_GROUP_LOCKED",
+    "22004": "FRIENDS_AUTHTOKEN_INVALID",
+    "22005": "FRIENDS_AUTHTOKEN_INVALID_FOR_USER",
+    "22006": "FRIENDS_INVITATION_NOT_FOUND",
+    "22007": "FRIENDS_TARGET_NOT_FRIEND",
+    "22008": "FRIENDS_TARGET_IN_CUSTOM_GROUP",
+    "22009": "FRIENDS_INVITEE_BLOCKED_BY_INVITER",
+    "22010": "FRIENDS_INVITEE_ALREADY_FRIEND",
+    "22013": "FRIENDS_FRIEND_NOT_IN_GROUP",
+    "22015": "FRIENDS_BLOCKING_SELF",
+    "22016": "FRIENDS_BATCH_INVITE_ERROR",
+    "22017": "FRIENDS_INVITEE_IS_INVITER",
+    "22018": "FRIENDS_ID_LIST_EMPTY",
+    "22020": "FRIENDS_OUTBOUND_INVITES_FULL",
+    "22021": "FRIENDS_INBOUND_INVITES_FULL",
+    "22022": "FRIENDS_FAVORITING_SELF",
+    "22023": "FRIENDS_UNFAVORITING_SELF",
+    "22024": "FRIENDS_FAVORITING_NON_FRIEND",
+    "22025": "FRIENDS_UNFAVORITING_NON_FRIEND",
+    "22026": "FRIENDS_NAMESPACE_MISTMATCH"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "muteUser",
+      "RequestType": "MuteUserRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "checkMuteStatus",
+      "RequestType": "CheckMuteStatusRequest",
+      "ResponseType": "PagedListUser",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "unmuteUser",
+      "RequestType": "MuteUserRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

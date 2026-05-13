@@ -1,0 +1,7 @@
+//comp=0x001C cmd=0x0072 msgType=Notification msgNum=0  [Blaze::Comp0x001C::Notif0x0072]
+DATA = [
+]
+EROR = 0 (0x0000)
+FNL = 1 (0x0001)
+GHID = 3520504079 (0xD1D6A10F)
+GRID = 3520504079 (0xD1D6A10F)

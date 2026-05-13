@@ -1,0 +1,50 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.Example"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 3,
+  "Name": "ExampleComponent",
+  "ShortName": "Example",
+  "ErrorCodes": {
+    "1": "EXAMPLE_ERR_UNKNOWN"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "poke",
+      "RequestType": "ExampleRequest",
+      "ResponseType": "ExampleResponse",
+      "ErrorResponseType": "ExampleError"
+    },
+    {
+      "Id": 2,
+      "Name": "rpcPassthrough",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "requestToUserSessionOwner",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 1,
+      "Name": "pokeMaster",
+      "RequestType": "ExampleRequest",
+      "ResponseType": "ExampleResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "rpcPassthroughMaster",
+      "RequestType": null,
+      "ResponseType": null,
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

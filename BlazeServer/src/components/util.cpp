@@ -103,7 +103,7 @@ std::unique_ptr<blaze::Packet> Util::handlePreAuth(
                 {"Override_ProtoHttp_LoginStateMachine_DedicatedServer_vers", "770,0,NULL"},
                 {"associationListSkipInitialSet",  "1"},
                 {"autoReconnectEnabled",           "0"},
-                {"bytevaultHostname",              "bytevault.gameservices.ea.com"},
+                {"bytevaultHostname",              "127.0.0.1"},
                 {"bytevaultPort",                  "42210"},
                 {"bytevaultSecure",                "true"},
                 {"cachedUserRefreshInterval",      "1s"},
@@ -130,21 +130,43 @@ std::unique_ptr<blaze::Packet> Util::handlePreAuth(
         .string("PLAT", "pc")
         .beginStruct("QOSS")
             .beginStruct("BWPS")
-                .string("PSA", "127.0.0.1")
-                .uint32("PSP", 17502)
-                .string("SNA", "ams")
+                .string("PSA", "")
+                .uint32("PSP", 0)
             .endStruct()
-            .uint16("LNP", 10)
+            .uint32("LNP", 10)
             .beginMap("LTPS", "string", "struct")
-                .string("ams")
+                .string("bio-dub")
                 .beginStruct()
-                    .string("PSA", "127.0.0.1")
-                    .uint32("PSP", 17502)
-                    .string("SNA", "ams")
+                    .string("PSA", "qos-prod-bio-dub-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
+                .endStruct()
+                .string("bio-iad")
+                .beginStruct()
+                    .string("PSA", "qos-prod-bio-iad-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
+                .endStruct()
+                .string("bio-sjc")
+                .beginStruct()
+                    .string("PSA", "qos-prod-bio-sjc-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
+                .endStruct()
+                .string("bio-syd")
+                .beginStruct()
+                    .string("PSA", "qos-prod-bio-syd-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
+                .endStruct()
+                .string("i3d-gru")
+                .beginStruct()
+                    .string("PSA", "qos-prod-m3d-brz-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
+                .endStruct()
+                .string("i3d-nrt")
+                .beginStruct()
+                    .string("PSA", "qos-prod-m3d-nrt-common-common.gos.ea.com")
+                    .uint32("PSP", 34976)
                 .endStruct()
             .endMap()
-            .uint32("SVID", 1161889797)
-            .string("TIME", "10000000")
+            .uint32("TIME", 10000000)
         .endStruct()
         .string("RSRC", "310695")
         .string("SVER", "Blaze 15.1.1.4.6 (CL# 2136954)")
@@ -204,14 +226,26 @@ std::unique_ptr<blaze::Packet> Util::handlePostAuth(
 namespace {
 
 void encodeExtendedData(blaze::TdfBuilder& b) {
+    // Fields in ascending tag value order per Blaze::UserSessionExtendedData SDK definition.
+    // ADDR (Union), CVAR (Variable), DMAP (uint-keyed map) omitted — not supported by emulator.
     b.beginStruct("DATA")
-         .string("BPS", "")           // best ping site alias
+         .string("BPS", "bio-sjc")
          .string("CTY", "US")
          .integer("HWFG", 0)
          .string("ISP", "")
+         .list("PSLM", blaze::TdfType::Integer, {})
+         .integerMap("PSM", {{"bio-sjc", 0}})
+         .beginStruct("QDAT")
+             .uint32("BWHR", 0)
+             .uint32("DBPS", 0)
+             .uint32("NAHR", 0)
+             .uint32("NATT", 0)
+             .uint32("UBPS", 0)
+         .endStruct()
          .string("TZ", "America/New_York")
-         .integer("UATT", 0)
-         .integer("XPLT", 1)
+         .uint64("UATT", 0)
+         .list("ULST", blaze::TdfType::Pair, {})
+         .boolean("XPLT", true)
      .endStruct();
 }
 
@@ -262,8 +296,8 @@ void Util::pushUserSessionExtendedDataUpdate(std::shared_ptr<network::ClientConn
     blaze::TdfBuilder builder;
     encodeExtendedData(builder);
     builder
-        .integer("SUBS", 1)
-        .integer("USID", userId);
+        .boolean("SUBS", true)
+        .integer("USID", static_cast<int64_t>(userId));
 
     auto notif = std::make_unique<blaze::Packet>(
         blaze::ComponentId::UserSessions,

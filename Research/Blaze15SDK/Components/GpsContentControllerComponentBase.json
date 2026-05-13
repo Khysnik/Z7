@@ -1,0 +1,36 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.GpsContentController"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 27,
+  "Name": "GpsContentControllerComponent",
+  "ShortName": "GpsContentController",
+  "ErrorCodes": {
+    "1": "GPSCONTENTCONTROLLER_ERR_CONTENT_NOT_FOUND"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "filePetition",
+      "RequestType": "FilePetitionRequest",
+      "ResponseType": "FilePetitionResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "fetchContent",
+      "RequestType": "FetchContentRequest",
+      "ResponseType": "FetchContentResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "showContent",
+      "RequestType": "ShowContentRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

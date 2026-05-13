@@ -1,0 +1,4 @@
+//comp=0x0804 cmd=0x000D msgType=Message msgNum=56  [Blaze::Comp0x0804::Cmd0x000DRequest]
+HIST = 0 (0x0000)
+LCAP = 40 (0x0028)
+UID = 0 (0x0000)

@@ -1,0 +1,220 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.ByteVault"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 31,
+  "Name": "ByteVaultComponent",
+  "ShortName": "ByteVault",
+  "ErrorCodes": {
+    "1": "BYTEVAULT_RECORD_REDIRECT",
+    "2": "BYTEVAULT_INVALID_CONTEXT",
+    "3": "BYTEVAULT_MISSING_CONTEXT",
+    "4": "BYTEVAULT_MISSING_LABEL",
+    "5": "BYTEVAULT_MISSING_DESCRIPTION",
+    "6": "BYTEVAULT_INVALID_CATEGORY",
+    "7": "BYTEVAULT_MISSING_CATEGORY",
+    "8": "BYTEVAULT_INVALID_PAYLOAD",
+    "9": "BYTEVAULT_MISSING_CONTENT_TYPE",
+    "10": "BYTEVAULT_MISSING_CONTENT_LENGTH",
+    "11": "BYTEVAULT_MISSING_RECORD_NAME",
+    "12": "BYTEVAULT_INVALID_USER_TYPE",
+    "13": "BYTEVAULT_MAX_RECORD_SIZE_EXCEEDED",
+    "14": "BYTEVAULT_MAX_RECORD_COUNT_EXCEEDED",
+    "15": "BYTEVAULT_MISSING_CREATION_TIME",
+    "16": "BYTEVAULT_NOT_ALLOWED",
+    "17": "BYTEVAULT_INVALID_USER",
+    "18": "BYTEVAULT_NO_MATCHING_RECORD",
+    "19": "BYTEVAULT_INVALID_MAX_RECORD_SIZE",
+    "20": "BYTEVAULT_INVALID_MAX_RECORD_COUNT",
+    "21": "BYTEVAULT_INVALID_ACTION_TYPE",
+    "22": "BYTEVAULT_AUTHENTICATION_REQUIRED",
+    "23": "BYTEVAULT_INVALID_TOKEN_TYPE",
+    "24": "BYTEVAULT_INVALID_TRUSTED_SOURCE",
+    "25": "BYTEVAULT_INVALID_ADMIN_TYPE",
+    "26": "BYTEVAULT_NOT_INITIALIZED",
+    "27": "BYTEVAULT_ALREADY_INITIALIZED",
+    "28": "BYTEVAULT_INVALID_LASTUPDATETIME",
+    "29": "BYTEVAULT_INVALID_DATE_RANGE",
+    "30": "BYTEVAULT_INVALID_RECORD_NAME",
+    "31": "BYTEVAULT_INVALID_MAX_HISTORY_RECORD_COUNT"
+  },
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "upsertAdmin",
+      "RequestType": "UpsertAdminRequest",
+      "ResponseType": "UpsertAdminResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "getAdmin",
+      "RequestType": "GetAdminRequest",
+      "ResponseType": "GetAdminResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 3,
+      "Name": "upsertContext",
+      "RequestType": "UpsertContextRequest",
+      "ResponseType": "UpsertContextResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 4,
+      "Name": "getContexts",
+      "RequestType": "GetContextsRequest",
+      "ResponseType": "GetContextsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 5,
+      "Name": "deleteContext",
+      "RequestType": "DeleteContextRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 6,
+      "Name": "upsertCategory",
+      "RequestType": "UpsertCategoryRequest",
+      "ResponseType": "UpsertCategoryResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 7,
+      "Name": "getCategories",
+      "RequestType": "GetCategoriesRequest",
+      "ResponseType": "GetCategoriesResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 8,
+      "Name": "deleteCategory",
+      "RequestType": "DeleteCategoryRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 9,
+      "Name": "upsertRecord",
+      "RequestType": "UpsertRecordRequest",
+      "ResponseType": "UpsertRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 10,
+      "Name": "getRecord",
+      "RequestType": "GetRecordRequest",
+      "ResponseType": "GetRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 11,
+      "Name": "headRecord",
+      "RequestType": "GetRecordRequest",
+      "ResponseType": "HeadRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 12,
+      "Name": "getRecordsInfo",
+      "RequestType": "GetRecordInfoRequest",
+      "ResponseType": "GetRecordInfoResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 14,
+      "Name": "deleteRecord",
+      "RequestType": "DeleteRecordRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 15,
+      "Name": "archiveRecords",
+      "RequestType": "ArchiveRecordsRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 16,
+      "Name": "deleteHistoryRecord",
+      "RequestType": "DeleteHistoryRecordRequest",
+      "ResponseType": null,
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 17,
+      "Name": "getHistoryRecord",
+      "RequestType": "GetHistoryRecordRequest",
+      "ResponseType": "GetHistoryRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 18,
+      "Name": "headHistoryRecord",
+      "RequestType": "GetHistoryRecordRequest",
+      "ResponseType": "HeadHistoryRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 19,
+      "Name": "getArchivedRecordsInfo",
+      "RequestType": "GetRecordInfoRequest",
+      "ResponseType": "GetHistoryRecordInfoResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 20,
+      "Name": "getAdminChangeHistory",
+      "RequestType": "GetAdminChangeHistoryRequest",
+      "ResponseType": "GetAdminChangeHistoryResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 21,
+      "Name": "getDataRates",
+      "RequestType": "GetDataRatesRequest",
+      "ResponseType": "GetDataRatesResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 22,
+      "Name": "getErrorRates",
+      "RequestType": "GetErrorRatesRequest",
+      "ResponseType": "GetErrorRatesResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 23,
+      "Name": "restoreRecord",
+      "RequestType": "GetHistoryRecordRequest",
+      "ResponseType": "UpsertRecordResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 24,
+      "Name": "getHistoryRecordsInfo",
+      "RequestType": "GetRecordRequest",
+      "ResponseType": "GetHistoryRecordInfoResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 104,
+      "Name": "getContext",
+      "RequestType": "GetContextsRequest",
+      "ResponseType": "Context",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 107,
+      "Name": "getCategory",
+      "RequestType": "GetCategoriesRequest",
+      "ResponseType": "Category",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

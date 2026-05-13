@@ -32,6 +32,11 @@ private:
         std::shared_ptr<ClientConnection> client
     );
 
+    std::unique_ptr<blaze::Packet> handleGetAuthToken(
+        const blaze::Packet& request,
+        std::shared_ptr<ClientConnection> client
+    );
+
     std::unique_ptr<blaze::Packet> handleLogout(
         const blaze::Packet& request,
         std::shared_ptr<ClientConnection> client

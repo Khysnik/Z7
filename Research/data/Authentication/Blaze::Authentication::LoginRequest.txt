@@ -1,0 +1,8 @@
+//comp=0x0001 cmd=0x000A msgType=Message msgNum=3  [Blaze::Authentication::LoginRequest]
+ACHT = {
+  SHID = []
+  SKID = []
+}
+AUTH = "<redacted>"
+EXTB = []
+EXTI = 0 (0x0000)

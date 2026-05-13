@@ -32,6 +32,9 @@ std::unique_ptr<blaze::Packet> Authentication::handlePacket(
         case blaze::AuthCommand::getPersona:
             return handleGetPersona(request, client);
 
+        case blaze::AuthCommand::getAuthToken:
+            return handleGetAuthToken(request, client);
+
         case blaze::AuthCommand::listPersonas:
             return handleListPersonas(request, client);
 
@@ -144,6 +147,26 @@ void Authentication::sendUserAuthenticatedNotification(
     notif->setPayload(builder.build());
     client->sendPacket(std::move(notif));
     LOG_INFO("[auth] pushed UserAuthenticated notif (uid={})", userId);
+}
+
+
+std::unique_ptr<blaze::Packet> Authentication::handleGetAuthToken(
+    const blaze::Packet& request,
+    std::shared_ptr<network::ClientConnection> client
+) {
+
+    auto requestTdf = request.getPayloadAsTdf();
+
+    std::string authCode = "696969420696969";
+
+    blaze::TdfBuilder builder;
+    builder
+        .string("AUTH", authCode);
+
+    auto reply = request.createReply();
+    reply->setPayload(builder.build());
+    client->sendPacket(std::move(reply));
+    return nullptr;
 }
 
 

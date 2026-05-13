@@ -1,0 +1,27 @@
+{
+  "Usings": [
+    "Blaze15SDK.Blaze.OSDKSettings"
+  ],
+  "Namespace": "Blaze15SDK.Components",
+  "Id": 2249,
+  "Name": "OSDKSettingsComponent",
+  "ShortName": "OSDKSettings",
+  "ErrorCodes": {},
+  "Methods": [
+    {
+      "Id": 1,
+      "Name": "fetchSettings",
+      "RequestType": null,
+      "ResponseType": "FetchSettingsResponse",
+      "ErrorResponseType": null
+    },
+    {
+      "Id": 2,
+      "Name": "fetchSettingsGroups",
+      "RequestType": null,
+      "ResponseType": "FetchSettingsGroupsResponse",
+      "ErrorResponseType": null
+    }
+  ],
+  "Notifications": []
+}

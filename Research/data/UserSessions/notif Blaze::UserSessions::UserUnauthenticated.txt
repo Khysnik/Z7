@@ -1,0 +1,3 @@
+//comp=0x7802 cmd=0x0009 msgType=Notification msgNum=0  [Blaze::UserSessions::UserUnauthenticated]
+BID = <redacted>
+USTP = 0 (0x0000)

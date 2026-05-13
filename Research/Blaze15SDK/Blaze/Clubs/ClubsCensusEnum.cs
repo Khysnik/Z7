@@ -1,0 +1,13 @@
+namespace Blaze15SDK.Blaze.Clubs;
+
+public enum ClubsCensusEnum : int
+{
+    CLUBS_MEMBERS_DOMAIN,
+    CLUBS_ONLINE_MEMBERS_DOMAIN,
+    CLUBS_DOMAIN,
+    CLUBS_ONLINE_DOMAIN,
+    CLUBS_MEMBERS,
+    CLUBS_ONLINE_MEMBERS,
+    CLUBS,
+    CLUBS_ONLINE,
+}

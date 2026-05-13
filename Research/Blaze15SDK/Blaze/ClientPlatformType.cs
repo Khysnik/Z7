@@ -1,0 +1,25 @@
+namespace Blaze15SDK.Blaze;
+
+public enum ClientPlatformType : int {
+    INVALID = 0x0,
+    pc = 4,
+    android = 5,
+    ios = 6,
+    common = 8,
+    mobile = 9,
+    legacyprofileid = 10,
+    verizon = 11,
+    facebook = 12,
+    facebook_eacom = 13,
+    bebo = 14,
+    friendster = 15,
+    twitter = 16,
+    xone = 19,
+    ps4 = 20,
+    nx = 21,
+    ps5 = 22,
+    xbsx = 23,
+    steam = 24,
+    stadia = 25,
+    NATIVE = 0xFFFF,
+}

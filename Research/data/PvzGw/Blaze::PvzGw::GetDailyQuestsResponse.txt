@@ -1,0 +1,21 @@
+//comp=0x0805 cmd=0x0009 msgType=Reply msgNum=10  [Blaze::PvzGw::GetDailyQuestsResponse]
+DQAT = 3557159968 (0xD405F420)
+DQET = 3557491200 (0xD40B0200)
+DQID = [
+  [0] = "mpdq_02"
+  [1] = "mpdq_10"
+  [2] = "mpdq_16"
+  [3] = "mpdq_17"
+  [4] = "mpdq_28"
+  [5] = "pdq_26"
+  [6] = "pdq_46"
+  [7] = "pdq_53"
+  [8] = "pdq_63"
+  [9] = "pdq_68"
+  [10] = "zdq_12"
+  [11] = "zdq_20"
+  [12] = "zdq_68"
+  [13] = "zdq_cu404"
+  [14] = "zdq_cu408"
+]
+DQTE = 226478 (0x000374AE)
