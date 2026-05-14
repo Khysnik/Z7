@@ -3,7 +3,7 @@ build/
 logs
 obj/
 bin/
-.claude/
 *.log
 .vscode
 private/
+node_modules/
