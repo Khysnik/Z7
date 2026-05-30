@@ -1,11 +1,48 @@
-holy blaze server
+# Z7 Project
+Z7 is an in-development Blaze server emulator for Plants vs Zombies: Garden Warfare 2. It is made up of 5 individual servers:
 
-nowhere near completion, and not newbie-friendly yet
+- Blaze server - The core game server that handles authentication, loading save data and configs, and matchmaking.
+- QoS server - Used to measure your ping and connection speeds to different datacenter locations to find the best one
+- Bytevault server - Stores and handles all of your player save data
+- Editorial server - Serves static assets and configs
+- Redirector server - The initial connection which connects your game to an active Blaze server
 
-progress 5/11/26: was able to dump a lot of config values from the official blaze servers. still running into the same error on the load screen. working on building a QoS server to hopefully remedy that.
+All servers except the Blaze server are made in NodeJS as it is a really familiar and simple language to me. The Blaze server on the other hand will be made in C++ as it needs to be a bit more performant than the others. I'm also doing this to help myself learn more C++ as that was my original goal with this project before it went public. Development of the Blaze server will be slow but steady as no AI tools will be used, and because of this no AI pull requests will be accepted.
 
-progress 5/12/26: no code commits today, but insane progress has been made. i'm planning on making my next major commit sometime tomorrow, this will include a wiki of the GW2 blaze functions and data. also, i will be rewriting the redirector server and implementing the bytevault, editorial, and QoS servers in nodejs as c++ is not needed for these smaller servers, it's also more familiar to me and i'll be able to do it without claude's help. big things coming <3
+### Blaze server
+In early development, currently building out the heat2 packet encoder and decoder.
 
-EDIT: blaze packet dump added to research :)
+### QoS server
+The HTTP side of this is complete, it just requires the UDP ping server to be built.
 
-progress 5/14/26: got 4 out of 5 servers implemented in NodeJS and started work on porting the heat2 deserializer. work is going way faster in nodejs as i have a ton more experience with the language. this also means that Claude won't be needed for coding assistance so it will be more maintainable.
+### Bytevault server
+In a working state with a static save file, player registration and save editing is TODO.
+
+### Editorial server
+Complete.
+
+### Redirector server
+Complete.
+
+
+## Contact me
+Discord: **khysnik**, you can find me in the PvZ FB Modding server.
+
+Email: duckie98@protonmail.com
+
+## Credits
+
+- [BlazeSDK](https://github.com/Aim4kill/BlazeSDK) By [@Aim4kill](https://github.com/Aim4kill)
+- [ME3PSE](https://github.com/PrivateServerEmulator/ME3PSE) By [@WarrantyVoider](https://github.com/zeroKilo) [@Erik-JS](https://github.com/Erik-JS)
+- [BFP4FToolsWV](https://github.com/zeroKilo/BFP4FToolsWV) & [BFP4FToolsWV Wiki](https://github.com/zeroKilo/BFP4FToolsWV/wiki) By [@WarrantyVoider](https://github.com/zeroKilo)
+- [PocketRelay](https://github.com/PocketRelay) & [jacobtread/tdf](https://github.com/jacobtread/tdf) By [@jacobtread](https://github.com/jacobtread/)
+- [Hall of Meat](https://github.com/hallofmeat) By [@Hall of Meat Team](https://github.com/hallofmeat)
+- [BlazeServer](https://github.com/pedromartins1/BlazeServer) By [@Perdo Martins](https://github.com/pedromartins1)
+- [BlazeSharkExtended](https://github.com/Tratos/BlazeSharkExtended) By [@Tratos](https://github.com/Tratos)
+- [recap_server](https://github.com/vitor251093/recap_server) By [@vitor251093](https://github.com/vitor251093) and [@dalkon](https://github.com/dalkon)
+- [openBlase](https://github.com/openBlase/openBlase) By [@openBlase](https://github.com/openBlase/openBlase)
+- [BF4BlazeEmulator](https://github.com/buchacho/BF4BlazeEmulator) By [@buchacho](https://github.com/buchacho)
+- [@the1Domo](https://github.com/g91)
+- [open-ds2-server](https://github.com/lowlevelmetal/open-ds2-server) By [@lowlevelmetal](https://github.com/lowlevelmetal)
+- [RaGEZONE Forums](https://forum.ragezone.com/)
+- [@BreakfastBrainz2](https://github.com/breakfastbrainz2)
