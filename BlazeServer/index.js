@@ -11,4 +11,4 @@ log.info("===========================================")
 
 startRedirector(42230, "127.0.0.1", 10041)
 startBytevault(42210)
-startEditorial(443)
+//startEditorial(443)

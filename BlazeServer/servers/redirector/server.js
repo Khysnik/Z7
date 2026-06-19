@@ -37,13 +37,16 @@ function startRedirector(port, rAddress, rPort) {
 
         res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <serverinstanceinfo>
-  <address>
-    <ipAddress>
+  <address member="0">
+    <valu>
+      <hostname>localhost</hostname>
       <ip>${ipv4ToInt(rAddress)}</ip>
       <port>${rPort}</port>
-    </ipAddress>
+    </valu>
   </address>
   <secure>1</secure>
+  <trialservicename></trialservicename>
+  <defaultdnsaddress>0</defaultdnsaddress>
   <messages>
     <warnMessage>Blaze Server v0.1.0</warnMessage>
   </messages>
