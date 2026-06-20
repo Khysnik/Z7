@@ -1,4 +1,0 @@
-//comp=0x0805 cmd=0x0005 msgType=Message msgNum=19  [Blaze::PvzGw::GetPersistedLicensesRequest]
-BLID = <redacted>
-FEEC = 0 (0x0000)
-FWDC = 0 (0x0000)

@@ -1,8 +1,0 @@
-//comp=0x0009 cmd=0x0016 msgType=Message msgNum=22  [Blaze::Util::ClientMetrics]
-UBFL = 6 (0x0006)
-UDEV = "<redacted>"
-UFLG = 31 (0x001F)
-ULRC = 0 (0x0000)
-UNAT = 3 (0x0003)
-USTA = 2 (0x0002)
-UWAN = <redacted>

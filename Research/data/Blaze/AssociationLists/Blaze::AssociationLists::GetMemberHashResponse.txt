@@ -1,4 +1,0 @@
-//comp=0x0019 cmd=0x000A msgType=Reply msgNum=36  [Blaze::AssociationLists::GetMemberHashResponse]
-BID = 0 (0x0000)
-HASH = 6065643170 (0x00000001698A5EA2)
-TYPE = 0 (0x0000)

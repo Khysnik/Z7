@@ -1,3 +1,0 @@
-//comp=0x0004 cmd=0x0064 msgType=Notification msgNum=0  [Blaze::GameManager::NotifyGameStateChange]
-GID = 35204832001283 (0x00002004C3817D03)
-GSTA = 16 (0x0010)

@@ -1,1 +1,0 @@
-//comp=0x0802 cmd=0x0005 msgType=Reply msgNum=25  [Blaze::Packs::AcquireCalendarPacksResponse]

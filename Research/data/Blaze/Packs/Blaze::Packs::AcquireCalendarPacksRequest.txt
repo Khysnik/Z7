@@ -1,2 +1,0 @@
-//comp=0x0802 cmd=0x0005 msgType=Message msgNum=25  [Blaze::Packs::AcquireCalendarPacksRequest]
-UID = 0 (0x0000)

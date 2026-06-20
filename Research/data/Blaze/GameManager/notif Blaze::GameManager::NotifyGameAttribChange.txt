@@ -1,6 +1,0 @@
-//comp=0x0004 cmd=0x0050 msgType=Notification msgNum=0  [Blaze::GameManager::NotifyGameAttribChange]
-ATTR = [
-  ("level", "Level_FE_Hub")
-  ("mode", "FrontEnd")
-]
-GID = 35204832001283 (0x00002004C3817D03)

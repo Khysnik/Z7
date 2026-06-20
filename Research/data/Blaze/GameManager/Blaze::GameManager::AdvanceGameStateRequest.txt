@@ -1,3 +1,0 @@
-//comp=0x0004 cmd=0x0003 msgType=Message msgNum=37  [Blaze::GameManager::AdvanceGameStateRequest]
-GID = 35204832001283 (0x00002004C3817D03)
-GSTA = 16 (0x0010)

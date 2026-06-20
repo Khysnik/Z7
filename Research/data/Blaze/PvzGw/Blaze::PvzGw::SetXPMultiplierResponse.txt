@@ -1,3 +1,0 @@
-//comp=0x0805 cmd=0x0007 msgType=Reply msgNum=12  [Blaze::PvzGw::Cmd0x0007Response]
-LXPM = 0.000000
-NXPM = 0.000000

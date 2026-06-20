@@ -1,2 +1,0 @@
-//comp=0x0009 cmd=0x0001 msgType=Message msgNum=15  [Blaze::Util::FetchClientConfigRequest]
-CFID = "EDITORIAL"

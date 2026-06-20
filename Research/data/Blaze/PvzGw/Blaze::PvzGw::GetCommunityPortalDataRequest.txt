@@ -1,2 +1,0 @@
-//comp=0x0805 cmd=0x0017 msgType=Message msgNum=50  [Blaze::PvzGw::GetCommunityPortalDataRequest]
-BLAZ = <redacted>

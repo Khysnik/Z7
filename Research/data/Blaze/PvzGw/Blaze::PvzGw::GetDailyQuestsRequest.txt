@@ -1,1 +1,0 @@
-//comp=0x0805 cmd=0x0009 msgType=Message msgNum=10  [Blaze::PvzGw::GetDailyQuestsRequest]

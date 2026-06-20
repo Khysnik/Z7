@@ -1,3 +1,0 @@
-//comp=0x7802 cmd=0x0005 msgType=Notification msgNum=0  [Blaze::UserSessions::UserUpdated]
-FLGS = 1 (0x0001)
-ID = <redacted>

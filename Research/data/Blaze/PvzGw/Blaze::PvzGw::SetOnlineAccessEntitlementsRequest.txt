@@ -1,3 +1,0 @@
-//comp=0x0805 cmd=0x000C msgType=Message msgNum=24  [Blaze::PvzGw::SetOnlineAccessEntitlementsRequest]
-ISSG = 0 (0x0000)
-MTYP = 0 (0x0000)

@@ -1,2 +1,0 @@
-//comp=0x0805 cmd=0x0002 msgType=Message msgNum=23  [Blaze::PvzGw::CheckUserMessagesRequest]
-PEID = <redacted>

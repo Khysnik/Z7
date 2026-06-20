@@ -1,4 +1,0 @@
-//comp=0x0009 cmd=0x0008 msgType=Message msgNum=4  [Blaze::Util::PostAuthRequest]
-DSUI = 0 (0x0000)
-MAC = "<redacted>"
-UDID = ""

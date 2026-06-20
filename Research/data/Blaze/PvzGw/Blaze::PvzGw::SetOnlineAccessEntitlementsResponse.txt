@@ -1,2 +1,0 @@
-//comp=0x0805 cmd=0x000C msgType=Reply msgNum=24  [Blaze::PvzGw::SetOnlineAccessEntitlementsResponse]
-ANEG = 0 (0x0000)

@@ -1,9 +1,0 @@
-//comp=0x0009 cmd=0x0001 msgType=Reply msgNum=26  [Blaze::Util::FetchConfigResponse]
-CONF = [
-  ("CLIENT_ID", "pvz")
-  ("ENABLED", "true")
-  ("FETCH_ENABLED", "false")
-  ("PLACEMENT_IDS", "10186,10187,13359,13463")
-  ("URL", "https://emapi.prm.data.ea.com/em/v2/messages")
-  ("URL_CLICKS", "https://emapi.prm.data.ea.com/em/v2/clicks")
-]

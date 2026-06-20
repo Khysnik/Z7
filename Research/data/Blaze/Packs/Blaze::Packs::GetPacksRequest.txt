@@ -1,9 +1,0 @@
-//comp=0x0802 cmd=0x0001 msgType=Message msgNum=30  [Blaze::Packs::GetPacksRequest]
-HIST = 1 (0x0001)
-LIMT = 0 (0x0000)
-MNCT = 0 (0x0000)
-MNGT = 0 (0x0000)
-MXCT = 0 (0x0000)
-MXGT = 0 (0x0000)
-SCAT = 0 (0x0000)
-UID = 0 (0x0000)

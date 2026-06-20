@@ -1,3 +1,0 @@
-//comp=0x0009 cmd=0x001C msgType=Message msgNum=9  [Blaze::Util::ClientState]
-MODE = 1 (0x0001)
-STAT = 0 (0x0000)

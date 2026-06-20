@@ -1,5 +1,0 @@
-//comp=0x0009 cmd=0x0001 msgType=Reply msgNum=2  [Blaze::Util::FetchConfigResponse]
-CONF = [
-  ("display", "console2/welcome")
-  ("redirect_uri", "http://127.0.0.1/success")
-]

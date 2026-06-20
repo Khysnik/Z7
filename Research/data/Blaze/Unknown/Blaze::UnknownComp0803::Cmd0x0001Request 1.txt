@@ -1,7 +1,0 @@
-//comp=0x0803 cmd=0x0001 msgType=Message msgNum=44  [Blaze::UnknownComp0803::Cmd0x0001Request]
-CFLG = 3 (0x0003)
-FWDC = 0 (0x0000)
-HIST = 0 (0x0000)
-RTYP = 1 (0x0001)
-TIBH = 2 (0x0002)
-UID = <redacted>

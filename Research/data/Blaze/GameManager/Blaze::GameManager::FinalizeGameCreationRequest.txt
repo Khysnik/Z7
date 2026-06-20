@@ -1,5 +1,0 @@
-//comp=0x0004 cmd=0x000F msgType=Message msgNum=35  [Blaze::GameManager::FinalizeGameCreationRequest]
-GID = 35204832001283 (0x00002004C3817D03)
-NPSI = ""
-XNNC = []
-XSES = []

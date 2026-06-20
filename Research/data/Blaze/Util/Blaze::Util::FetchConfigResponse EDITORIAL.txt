@@ -1,4 +1,0 @@
-//comp=0x0009 cmd=0x0001 msgType=Reply msgNum=15  [Blaze::Util::FetchConfigResponse]
-CONF = [
-  ("url", "https://editorial.gos.ea.com/PlantsVsZombies/GW2/config/pc/game.xml")
-]

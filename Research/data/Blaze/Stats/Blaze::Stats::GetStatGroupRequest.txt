@@ -1,2 +1,0 @@
-//comp=0x0007 cmd=0x0004 msgType=Message msgNum=38  [Blaze::Stats::GetStatGroupRequest]
-NAME = "player_mpdefault"

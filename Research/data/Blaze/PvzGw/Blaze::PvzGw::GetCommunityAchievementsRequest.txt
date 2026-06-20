@@ -1,2 +1,0 @@
-//comp=0x0805 cmd=0x0012 msgType=Message msgNum=52  [Blaze::PvzGw::GetCommunityAchievementsRequest]
-GCAR = <redacted>

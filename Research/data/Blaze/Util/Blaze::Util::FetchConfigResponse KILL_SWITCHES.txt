@@ -1,7 +1,0 @@
-//comp=0x0009 cmd=0x0001 msgType=Reply msgNum=13  [Blaze::Util::FetchConfigResponse]
-CONF = [
-  ("assocListsAndStatsKillSwitch", "false")
-  ("blazeAchievementServiceKillSwitch", "false")
-  ("matchmakeResetProbability", "1")
-  ("packExternalPurchaseKillSwitch", "false")
-]

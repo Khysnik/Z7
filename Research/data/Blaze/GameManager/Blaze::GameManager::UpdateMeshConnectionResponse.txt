@@ -1,1 +1,0 @@
-//comp=0x0004 cmd=0x001D msgType=Reply msgNum=34  [Blaze::GameManager::Cmd0x001DResponse]
