@@ -7,13 +7,13 @@ Z7 is an in-development Blaze server emulator for Plants vs Zombies: Garden Warf
 - Editorial server - Serves static assets and configs
 - Redirector server - The initial connection which connects your game to an active Blaze server
 
-All servers except the Blaze server are made in NodeJS as it is a really familiar and simple language to me. The Blaze server on the other hand will be made in C++ as it needs to be a bit more performant than the others. I'm also doing this to help myself learn more C++ as that was my original goal with this project before it went public. Development of the Blaze server will be slow but steady as no AI tools will be used, and because of this no AI pull requests will be accepted.
+All servers except the Blaze server are made in NodeJS as it is a really familiar and simple language to me. The Blaze server on the other hand will be made in C++ as it needs to be a bit more performant than the others.
 
 ### Blaze server
-In early development, currently building out the heat2 packet encoder and decoder.
+Successfully loads to the backyard with player save-data. Save synchronization, save updating, packs, news, matchmaking, events, etc are all TODO.
 
 ### QoS server
-The HTTP side of this is complete, it just requires the UDP ping server to be built.
+The HTTP side of this is complete, it just requires the UDP ping server to be built. The Blaze server currently just uses the EA servers
 
 ### Bytevault server
 In a working state with a static save file, player registration and save editing is TODO.

@@ -1,1 +1,0 @@
-notes and references from my time reverse engineering the GW2 binary
