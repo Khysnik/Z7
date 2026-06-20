@@ -20,7 +20,7 @@ Successfully loads to the backyard with player save-data. Save synchronization, 
 The HTTP side of this is complete, it just requires the UDP ping server to be built. The Blaze server currently just uses the EA servers
 
 ### Bytevault server
-In a working state with a static save file, player registration and save editing is TODO.
+Complete.
 
 ### Editorial server
 Complete.
