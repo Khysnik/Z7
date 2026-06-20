@@ -1,0 +1,89 @@
+{
+  "rarityOrder": [
+    "Common",
+    "Uncommon",
+    "Rare",
+    "SuperRare",
+    "Legendary"
+  ],
+  "packs": {
+    "dynpk269": {
+      "name": "Minions Booster Pack",
+      "cost": 2500,
+      "slots": [
+        {
+          "repeat": 5,
+          "source": "consumable"
+        }
+      ]
+    },
+    "dynpk270": {
+      "name": "Helpful Fun Pack",
+      "cost": 7500,
+      "slots": [
+        {
+          "source": "item",
+          "minRarity": "Uncommon"
+        },
+        {
+          "repeat": 4,
+          "source": "item"
+        }
+      ]
+    },
+    "dynpk271": {
+      "name": "Extraordinary Pack",
+      "cost": 20000,
+      "slots": [
+        {
+          "source": "item",
+          "minRarity": "Rare"
+        },
+        {
+          "source": "sticker",
+          "rarity": "Rare",
+          "chance": 0.6,
+          "else": "item"
+        },
+        {
+          "repeat": 4,
+          "source": "item"
+        }
+      ]
+    },
+    "dynpk272": {
+      "name": "Wondrous Pack of Greatness",
+      "cost": 35000,
+      "slots": [
+        {
+          "source": "item",
+          "minRarity": "SuperRare"
+        },
+        {
+          "source": "sticker",
+          "rarity": "SuperRare",
+          "chance": 0.6,
+          "else": "item"
+        },
+        {
+          "repeat": 5,
+          "source": "item"
+        }
+      ]
+    },
+    "dynpk273": {
+      "name": "Phenomenal Character Pack",
+      "cost": 75000,
+      "slots": [
+        {
+          "source": "stickerSet",
+          "rarityIn": [
+            "Rare",
+            "SuperRare"
+          ],
+          "excludeLegendary": true
+        }
+      ]
+    }
+  }
+}

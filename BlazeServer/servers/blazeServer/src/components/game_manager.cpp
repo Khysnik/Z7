@@ -24,6 +24,8 @@ static blaze::TdfStruct buildNetAddr() {
         .build();
 }
 
+// Big-ass game setup data
+
 static blaze::TdfStruct buildGameSetup() {
     std::vector<uint8_t> emptyBin;
 
@@ -103,7 +105,7 @@ static blaze::TdfStruct buildGameSetup() {
         .integer("PSET", 1).integer("RCRE", 0).string("ROLE", "")
         .integer("SID", 0).integer("SLOT", 0).integer("STAT", 4).integer("TIDX", 0)
         .integer("TIME", kPtime)
-        .objectId("UGID", 0xF002, 0x0002, config::connGroupId)
+        .objectId("UGID", 0x7802, 0x0002, config::connGroupId)
         .integer("UID", config::userSessionId)
         .string("UUID", "9c3d634f-bd82-4c8d-a706-ba443e434707")
         .build();

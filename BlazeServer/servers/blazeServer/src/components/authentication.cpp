@@ -45,6 +45,9 @@ std::unique_ptr<blaze::Packet> Authentication::handlePacket(
     }
 }
 
+
+// Game client sends auth token, server responds with user info and session details.
+
 std::unique_ptr<blaze::Packet> Authentication::handleLogin(
     const blaze::Packet& request,
     std::shared_ptr<network::ClientConnection> client
@@ -89,6 +92,7 @@ std::unique_ptr<blaze::Packet> Authentication::handleLogin(
     return nullptr;
 }
 
+
 void Authentication::sendUserAuthenticatedNotification(
     std::shared_ptr<network::ClientConnection> client
 ) {
@@ -98,7 +102,7 @@ void Authentication::sendUserAuthenticatedNotification(
         .integer("1CON", 0)
         .integer("ALOC", config::locale)
         .integer("BUID", config::blazeId)
-        .objectId("CGID", /*component=*/0xF002, /*type=*/0x0002, /*id=*/config::connGroupId)
+        .objectId("CGID", /*component=*/0x7802, /*type=*/0x0002, /*id=*/config::connGroupId)
         .string("DSNM", config::persona)
         .integer("FRST", 0)
         .string("KEY",  config::sessionKey)
@@ -149,7 +153,7 @@ void Authentication::sendUserAddedNotification(
             .endStruct()
             .string("TZ", "")
             .integer("UATT", 0)
-            .objectIdList("ULST", {{0xF002, 0x0002, static_cast<uint64_t>(config::connGroupId)}})
+            .objectIdList("ULST", {{0x7802, 0x0002, static_cast<uint64_t>(config::connGroupId)}})
         .endStruct()
         .beginStruct("USER")
             .integer("AID",  config::nucleusId)
@@ -173,6 +177,8 @@ void Authentication::sendUserAddedNotification(
     client->sendPacket(std::move(notif));
 }
 
+// Game client requests a bytevault auth token
+
 std::unique_ptr<blaze::Packet> Authentication::handleGetAuthToken(
     const blaze::Packet& request,
     std::shared_ptr<network::ClientConnection> client
@@ -192,6 +198,7 @@ std::unique_ptr<blaze::Packet> Authentication::handleGetAuthToken(
     return nullptr;
 }
 
+// Seemingly unused, but implemented just in case
 
 std::unique_ptr<blaze::Packet> Authentication::handleExpressLogin(
     const blaze::Packet& request,
@@ -252,6 +259,8 @@ std::unique_ptr<blaze::Packet> Authentication::handleExpressLogin(
     return nullptr;
 }
 
+// Client logout, server clears session data
+
 std::unique_ptr<blaze::Packet> Authentication::handleLogout(
     const blaze::Packet& request,
     std::shared_ptr<network::ClientConnection> client
@@ -304,25 +313,20 @@ std::unique_ptr<blaze::Packet> Authentication::handleListPersonas(
     std::string personaName = client->getPersonaName();
     if (personaName.empty()) personaName = "PvZPlayer";
 
-    blaze::TdfStruct pdtl;
-    pdtl["DPTS"] = std::make_shared<blaze::TdfValue>("DPTS", blaze::TdfType::String,  blaze::TdfString(""));
-    pdtl["EXID"] = std::make_shared<blaze::TdfValue>("EXID", blaze::TdfType::Integer, blaze::TdfInteger(0));
-    pdtl["GTYP"] = std::make_shared<blaze::TdfValue>("GTYP", blaze::TdfType::Integer, blaze::TdfInteger(0));
-    pdtl["MAIL"] = std::make_shared<blaze::TdfValue>("MAIL", blaze::TdfType::String,  blaze::TdfString(""));
-    pdtl["PID"]  = std::make_shared<blaze::TdfValue>("PID",  blaze::TdfType::Integer, blaze::TdfInteger(static_cast<int64_t>(userId)));
-    pdtl["PNAM"] = std::make_shared<blaze::TdfValue>("PNAM", blaze::TdfType::String,  blaze::TdfString(personaName));
-
-    blaze::TdfList personaList;
-    personaList.push_back(std::make_shared<blaze::TdfValue>("", blaze::TdfType::Struct, pdtl));
-
-    blaze::TdfStruct root;
-    root["NTOS"] = std::make_shared<blaze::TdfValue>("NTOS", blaze::TdfType::Integer, blaze::TdfInteger(0));
-    root["PLST"] = std::make_shared<blaze::TdfValue>("PLST", blaze::TdfType::List,    personaList);
-
     auto reply = request.createReply();
-    reply->setPayload(root);
-
-
+    reply->setPayload(blaze::TdfBuilder()
+        .integer("NTOS", 0)
+        .beginList("PLST")
+            .beginStruct()
+                .string("DPTS", "")
+                .integer("EXID", 0)
+                .integer("GTYP", 0)
+                .string("MAIL", "")
+                .integer("PID", static_cast<int64_t>(userId))
+                .string("PNAM", personaName)
+            .endStruct()
+        .endList()
+        .build());
     return reply;
 }
 

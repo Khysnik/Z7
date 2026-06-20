@@ -1,6 +1,7 @@
 #include "components/inventory.hpp"
 #include "blaze/tdf.hpp"
 #include "data/inventory.hpp"
+#include "data/loot.hpp"
 #include "utils/logger.hpp"
 
 namespace gw2::components {
@@ -31,40 +32,34 @@ std::unique_ptr<blaze::Packet> InventoryComponent::handleGetInventory(
 ) {
     LOG_INFO("[Inventory] getInventory from {}", client->getRemoteAddress());
 
-    blaze::TdfList clst;
-    for (auto& item : data::getInventoryItems()) {
-        clst.push_back(std::make_shared<blaze::TdfValue>("", blaze::TdfType::Struct,
-            blaze::TdfBuilder()
-                .integer("ACTT", 0)
-                .string("CKEY", item.ckey)
-                .integer("DURA", 1)
-                .integer("QANT", item.qant)
-                .build()));
+    // Make sure any sticker set the player has fully collected has its character
+    // variant unlocked before we report inventory (covers sets completed before
+    // variant grants existed, and is a no-op once reconciled).
+    if (int n = data::reconcileVariants(); n > 0) {
+        data::saveInventory();
+        LOG_INFO("[Inventory] reconciled {} character variant(s) from owned pieces", n);
     }
 
-    blaze::TdfStruct invt;
-    invt["CLST"] = std::make_shared<blaze::TdfValue>("CLST", blaze::TdfType::List, clst);
-    invt["ULST"] = std::make_shared<blaze::TdfValue>("ULST", blaze::TdfType::List,
-        [&]() {
-            blaze::TdfList ul;
-            for (auto& s : data::getInventoryUnlocks()) {
-                ul.push_back(std::make_shared<blaze::TdfValue>("", blaze::TdfType::String, s));
-            }
-            return ul;
-        }());
-
-    blaze::TdfList tinvUlst;
-    tinvUlst.push_back(std::make_shared<blaze::TdfValue>("", blaze::TdfType::String, std::string("abchrb")));
-
-    blaze::TdfStruct tinv;
-    tinv["ULST"] = std::make_shared<blaze::TdfValue>("ULST", blaze::TdfType::List, tinvUlst);
-
-    blaze::TdfStruct response;
-    response["INVT"] = std::make_shared<blaze::TdfValue>("INVT", blaze::TdfType::Struct, invt);
-    response["TINV"] = std::make_shared<blaze::TdfValue>("TINV", blaze::TdfType::Struct, tinv);
+    blaze::TdfBuilder b;
+    b.beginStruct("INVT")
+        .beginList("CLST");
+    for (auto& item : data::getInventoryItems()) {
+        b.beginStruct()
+            .integer("ACTT", 0)
+            .string("CKEY", item.ckey)
+            .integer("DURA", 1)
+            .integer("QANT", item.qant)
+        .endStruct();
+    }
+    b.endList()
+        .list("ULST", blaze::TdfType::String, data::getInventoryUnlocks())
+     .endStruct()
+     .beginStruct("TINV")
+        .list("ULST", blaze::TdfType::String, { "abchrb" })
+     .endStruct();
 
     auto reply = request.createReply();
-    reply->setPayload(response);
+    reply->setPayload(b.build());
     return reply;
 }
 

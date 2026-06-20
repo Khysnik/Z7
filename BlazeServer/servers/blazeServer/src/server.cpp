@@ -10,6 +10,9 @@
 #include "components/pvz_gw.hpp"
 #include "components/packs.hpp"
 #include "components/inventory.hpp"
+#include "components/game_reporting.hpp"
+#include "data/player_profile.hpp"
+#include "data/inventory.hpp"
 #include "utils/logger.hpp"
 #ifdef _WIN32
 #include <winsock2.h>
@@ -59,7 +62,13 @@ void Server::setupComponents() {
     registry.registerComponent(std::make_shared<components::InventoryComponent>());
     registry.registerComponent(std::make_shared<components::GameManager>());
     registry.registerComponent(std::make_shared<components::StatsComponent>());
-    
+    registry.registerComponent(std::make_shared<components::GameReportingComponent>());
+
+    data::PlayerProfile::instance().load("data/MPProfile.json");
+    data::PlayerProfile::instance().loadAggregation("data/stat_aggregation.json");
+
+    data::loadInventory("data/inventory.json");
+
 }
 
 void Server::start() {

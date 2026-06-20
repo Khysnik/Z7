@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #endif
 
+// Hopefully i'll never ever have to touch this file again
+
 namespace gw2::network {
 
 ClientConnection::ClientConnection(
@@ -14,6 +16,7 @@ ClientConnection::ClientConnection(
     uint64_t connectionId
 )
     : m_socket(socket)
+    , m_strand(asio::make_strand(asio::any_io_executor(socket->get_executor())))
     , m_connectionId(connectionId)
     , m_running(false)
     , m_writing(false)
@@ -46,19 +49,17 @@ void ClientConnection::startWithBuffer(std::vector<uint8_t> prefetchedHeader) {
 }
 
 void ClientConnection::stop() {
-    if (!m_running) return;
-    
-    m_running = false;
+    if (!m_running.exchange(false)) return;   // idempotent across threads
+
     asio::error_code ec;
-    std::string reason = "normal";
-    if (ec) reason = ec.message();
     m_socket->lowest_layer().shutdown(tcp::socket::shutdown_both, ec);
     m_socket->lowest_layer().close(ec);
     LOG_INFO("[blaze] disconnected {}", m_connectionId);
+
     if (m_disconnectHandler) {
-        // Call handler (but be careful about shared_ptr cycles)
-        auto self = shared_from_this();
-        m_disconnectHandler(self);
+        // shared_from_this() throws if we're here from the destructor; ignore.
+        try { m_disconnectHandler(shared_from_this()); }
+        catch (const std::bad_weak_ptr&) {}
     }
 }
 
@@ -81,19 +82,15 @@ void ClientConnection::sendPacket(const blaze::Packet& packet) {
                 body += "\n... (truncated)";
             }
         }
-        //LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body); disabled body, too verbose
+        //LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
         LOG_INFO("[{}] << {}", isNotif ? "notif" : "reply", name);
     }
     
-    {
-        std::lock_guard<std::mutex> lock(m_writeMutex);
+    auto self = shared_from_this();
+    asio::post(m_strand, [this, self, data = std::move(data)]() mutable {
         m_writeQueue.push(std::move(data));
-    }
-    
-    // Start write if not already writing
-    if (!m_writing) {
-        doWrite();
-    }
+        if (!m_writing) doWrite();
+    });
 }
 
 void ClientConnection::sendPacket(std::unique_ptr<blaze::Packet> packet) {
@@ -136,9 +133,10 @@ void ClientConnection::doReadHeader() {
     asio::async_read(
         *m_socket,
         asio::buffer(m_headerBuffer),
-        [this, self](const asio::error_code& error, size_t bytes_transferred) {
-            handleReadHeader(error, bytes_transferred);
-        }
+        asio::bind_executor(m_strand,
+            [this, self](const asio::error_code& error, size_t bytes_transferred) {
+                handleReadHeader(error, bytes_transferred);
+            })
     );
 }
 
@@ -210,9 +208,10 @@ void ClientConnection::doReadPayload(size_t length) {
     asio::async_read(
         *m_socket,
         asio::buffer(m_payloadBuffer),
-        [this, self](const asio::error_code& error, size_t bytes_transferred) {
-            handleReadPayload(error, bytes_transferred);
-        }
+        asio::bind_executor(m_strand,
+            [this, self](const asio::error_code& error, size_t bytes_transferred) {
+                handleReadPayload(error, bytes_transferred);
+            })
     );
 }
 
@@ -231,7 +230,6 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     fullPacket.insert(fullPacket.end(), m_headerBuffer.begin(), m_headerBuffer.end());
     fullPacket.insert(fullPacket.end(), m_payloadBuffer.begin(), m_payloadBuffer.end());
 
-    // Full payload hex dump for TDF analysis (up to 256 bytes per line)
     {
         size_t total = m_payloadBuffer.size();
         size_t dumpLen = std::min(total, size_t(256));
@@ -261,7 +259,7 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
                 body += "\n... (truncated)";
             }
         }
-        //LOG_INFO("[recv] >> {}{}", name, body); disabled body, too verbose
+        //LOG_INFO("[recv] >> {}{}", name, body);
         LOG_INFO("[recv] >> {}", name);
         if (m_packetHandler) {
             m_packetHandler(shared_from_this(), std::move(packet));
@@ -273,44 +271,42 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
 }
 
 void ClientConnection::doWrite() {
+    // Always invoked on m_strand (from sendPacket's post or handleWrite).
     if (!m_running) return;
-    
-    std::lock_guard<std::mutex> lock(m_writeMutex);
-    
+
     if (m_writeQueue.empty()) {
         m_writing = false;
         return;
     }
-    
+
     m_writing = true;
     auto self = shared_from_this();
-    
-    // Get front of queue (don't pop yet)
+
+    // Front stays in the queue until the write completes.
     const auto& data = m_writeQueue.front();
-    
+
     asio::async_write(
         *m_socket,
         asio::buffer(data),
-        [this, self](const asio::error_code& error, size_t bytes_transferred) {
-            handleWrite(error, bytes_transferred);
-        }
+        asio::bind_executor(m_strand,
+            [this, self](const asio::error_code& error, size_t bytes_transferred) {
+                handleWrite(error, bytes_transferred);
+            })
     );
 }
 
 void ClientConnection::handleWrite(const asio::error_code& error, size_t /*bytes_transferred*/) {
+    // On m_strand.
     if (error) {
-        LOG_ERROR("[Conn:{}] Write error: {}", m_connectionId, error.message());
+        if (error != asio::error::operation_aborted)
+            LOG_ERROR("[Conn:{}] Write error: {}", m_connectionId, error.message());
+        m_writing = false;
         stop();
         return;
     }
-    
-    {
-        std::lock_guard<std::mutex> lock(m_writeMutex);
-        m_writeQueue.pop();
-    }
-    
-    // Continue writing if more in queue
-    doWrite();
+
+    m_writeQueue.pop();
+    doWrite();   // continue with any queued writes
 }
 
 } // namespace gw2::network

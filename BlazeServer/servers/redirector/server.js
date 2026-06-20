@@ -1,14 +1,13 @@
 //redirector server, routes game client to blaze server instance
 import { log } from "../../utils/log.js";
-import { fileURLToPath } from 'node:url';
+import { serverDir } from "../../utils/appdir.js";
 import express from "express"
 import fs from "node:fs"
 import path from "node:path"
 import https from "node:https"
 import constants from "node:constants";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = serverDir(import.meta.url, "redirector");
 
 const app = express();
 
@@ -48,7 +47,7 @@ function startRedirector(port, rAddress, rPort) {
   <trialservicename></trialservicename>
   <defaultdnsaddress>0</defaultdnsaddress>
   <messages>
-    <warnMessage>Blaze Server v0.1.0</warnMessage>
+    <warnMessage>Z7 Emulator v0.9.9</warnMessage>
   </messages>
 </serverinstanceinfo>
 `)

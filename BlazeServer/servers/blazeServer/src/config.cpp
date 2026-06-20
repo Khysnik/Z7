@@ -1,5 +1,7 @@
 #include "config.hpp"
 
+// Hardcoded user info, will eventually move to a json file but i'm l a z y
+
 namespace gw2::config {
 
 const std::int64_t  blazeId        = 2013801447574LL;

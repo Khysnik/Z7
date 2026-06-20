@@ -48,6 +48,11 @@ private:
         std::shared_ptr<ClientConnection> client
     );
 
+    std::unique_ptr<blaze::Packet> handleLocalizeStrings(
+        const blaze::Packet& request,
+        std::shared_ptr<ClientConnection> client
+    );
+
     void pushUserAddedNotification(std::shared_ptr<ClientConnection> client);
 
     void pushUserSessionExtendedDataUpdate(std::shared_ptr<ClientConnection> client);

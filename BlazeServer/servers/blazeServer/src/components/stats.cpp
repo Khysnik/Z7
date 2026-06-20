@@ -1,20 +1,10 @@
 #include "components/stats.hpp"
 #include "blaze/tdf.hpp"
+#include "data/player_profile.hpp"
 #include "network/client_connection.hpp"
 #include "utils/logger.hpp"
 
-#include <fstream>
-#include <iterator>
-#include <vector>
-
 namespace gw2::components {
-
-static std::vector<uint8_t> loadFile(const char* path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { LOG_WARN("[Stats] file missing: {}", path); return {}; }
-    return std::vector<uint8_t>((std::istreambuf_iterator<char>(f)),
-                                 std::istreambuf_iterator<char>());
-}
 
 StatsComponent::StatsComponent()
     : Component(blaze::ComponentId::Stats, "Stats")
@@ -29,26 +19,21 @@ std::unique_ptr<blaze::Packet> StatsComponent::handlePacket(
 
     switch (command) {
         case 0x0004: {
-            // EA metadata, replayed from a bin file because of the large size
             auto reply = request.createReply();
-            auto bytes = loadFile("data/stats_getstatgroup.bin");
-            if (!bytes.empty()) reply->payload() = bytes;
-            LOG_INFO("[Stats] getStatGroup -> {} bytes", bytes.size());
+            reply->setPayload(data::PlayerProfile::instance().buildStatGroup());
+            LOG_INFO("[Stats] getStatGroup -> built from MPProfile schema");
             return reply;
         }
         case 0x0010: {
-            // Player progression (Notif0x0032). Currently a captured blob; TODO:
-            // generate this from the bytevault PlayerProfile so it stays
-            // in sync with saved data.
+            // Player progression, built from data/MPProfile.json
             client->sendPacket(*request.createReply());
-            auto bytes = loadFile("data/stats_progression.bin");
-            if (!bytes.empty()) {
-                auto notif = std::make_unique<blaze::Packet>(
-                    blaze::ComponentId::Stats, 0x0032, blaze::MessageType::Notification, 0);
-                notif->payload() = bytes;
-                client->sendPacket(std::move(notif));
-                LOG_INFO("[Stats] getStats -> pushed Notif0x0032 ({} bytes progression)", bytes.size());
-            }
+            auto notif = std::make_unique<blaze::Packet>(
+                blaze::ComponentId::Stats, 0x0032, blaze::MessageType::Notification, 0);
+
+            auto& profile = data::PlayerProfile::instance();
+            notif->setPayload(profile.buildStatsNotif());
+            LOG_INFO("[Stats] getStats -> pushed Notif0x0032 from MPProfile.json");
+            client->sendPacket(std::move(notif));
             return nullptr;
         }
         default:

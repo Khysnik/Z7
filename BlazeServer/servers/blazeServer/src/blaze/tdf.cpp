@@ -48,19 +48,41 @@ void TdfEncoder::encodeTag(const std::string& tag) {
     writeByte(((v2 & 0x03) << 6) | v3);
 }
 
+// Blaze integer wire format: the FIRST byte carries only 6 magnitude bits, with
+// bit 6 = sign and bit 7 = continuation; every following byte carries 7 bits.
+// (This differs from plain 7-bit LEB128 -- decoding an LEB128 integer with this
+// scheme halves the value, which is what caused coins to read as ~half and the
+// old "time * 2" workaround. See decodeVarInt and utils/server_time.hpp.)
 void TdfEncoder::encodeVarInt(int64_t value) {
-    encodeVarUInt(static_cast<uint64_t>(value));
+    bool negative = value < 0;
+    uint64_t mag  = negative ? static_cast<uint64_t>(-(value + 1)) + 1
+                             : static_cast<uint64_t>(value);
+    uint8_t first = mag & 0x3F;          // low 6 bits
+    if (negative)   first |= 0x40;       // sign bit
+    mag >>= 6;
+    if (mag != 0)   first |= 0x80;       // continuation
+    writeByte(first);
+    while (mag != 0) {
+        uint8_t byte = mag & 0x7F;
+        mag >>= 7;
+        if (mag != 0) byte |= 0x80;
+        writeByte(byte);
+    }
 }
 
+// Unsigned values (object-type components, ids, tdf ids) share the integer
+// container: 6 bits in the first byte (bit 6 left zero), 7 bits thereafter.
 void TdfEncoder::encodeVarUInt(uint64_t value) {
-    do {
+    uint8_t first = value & 0x3F;
+    value >>= 6;
+    if (value != 0) first |= 0x80;
+    writeByte(first);
+    while (value != 0) {
         uint8_t byte = value & 0x7F;
         value >>= 7;
-        if (value != 0) {
-            byte |= 0x80;
-        }
+        if (value != 0) byte |= 0x80;
         writeByte(byte);
-    } while (value != 0);
+    }
 }
 
 void TdfEncoder::encodeStrLen(uint64_t value) {
@@ -243,6 +265,8 @@ void TdfEncoder::encodeMap(const std::string& tag, TdfType keyType, TdfType valu
     for (const auto& [k, v] : map.data) {
         if (keyType == TdfType::String)
             encodeRawString(k);
+        else if (keyType == TdfType::Integer || keyType == TdfType::TimeValue)
+            encodeVarInt(std::stoll(k));  // keys are held as strings; emit as varint
 
         if (v) {
             switch (valueType) {
@@ -462,28 +486,40 @@ TdfType TdfDecoder::decodeType() {
     return static_cast<TdfType>(readByte());
 }
 
+// Blaze integer: first byte = 6 magnitude bits + sign (bit 6) + continuation
+// (bit 7); subsequent bytes = 7 magnitude bits + continuation. Mirrors encodeVarInt.
 int64_t TdfDecoder::decodeVarInt() {
-    return static_cast<int64_t>(decodeVarUInt());
+    if (!hasMore()) return 0;
+    uint8_t first = readByte();
+    bool negative = (first & 0x40) != 0;
+    uint64_t result = first & 0x3F;
+    int shift = 6;
+    if (first & 0x80) {
+        while (hasMore()) {
+            uint8_t byte = readByte();
+            result |= static_cast<uint64_t>(byte & 0x7F) << shift;
+            shift += 7;
+            if ((byte & 0x80) == 0) break;
+            if (shift > 63) throw std::runtime_error("TDF: VarInt too large");
+        }
+    }
+    return negative ? -static_cast<int64_t>(result) : static_cast<int64_t>(result);
 }
 
 uint64_t TdfDecoder::decodeVarUInt() {
-    uint64_t result = 0;
-    int shift = 0;
-    
-    while (hasMore()) {
-        uint8_t byte = readByte();
-        result |= static_cast<uint64_t>(byte & 0x7F) << shift;
-        
-        if ((byte & 0x80) == 0) {
-            break;
-        }
-        
-        shift += 7;
-        if (shift > 63) {
-            throw std::runtime_error("TDF: VarInt too large");
+    if (!hasMore()) return 0;
+    uint8_t first = readByte();
+    uint64_t result = first & 0x3F;       // bit 6 (sign) unused for unsigned values
+    int shift = 6;
+    if (first & 0x80) {
+        while (hasMore()) {
+            uint8_t byte = readByte();
+            result |= static_cast<uint64_t>(byte & 0x7F) << shift;
+            shift += 7;
+            if ((byte & 0x80) == 0) break;
+            if (shift > 63) throw std::runtime_error("TDF: VarInt too large");
         }
     }
-    
     return result;
 }
 
@@ -576,6 +612,8 @@ TdfMapWrapper TdfDecoder::decodeMap() {
         std::string key;
         if (keyType == TdfType::String)
             key = decodeString();
+        else if (keyType == TdfType::Integer || keyType == TdfType::TimeValue)
+            key = std::to_string(decodeInteger());  // held as string in the wrapper
         else
             break;
 
@@ -892,6 +930,17 @@ TdfBuilder& TdfBuilder::integerMap(const std::string& tag, const std::map<std::s
     return *this;
 }
 
+TdfBuilder& TdfBuilder::intKeyStringMap(const std::string& tag, const std::map<std::string, std::string>& values) {
+    TdfMapWrapper wrapper;
+    wrapper.keyType   = TdfType::Integer;   // keys held as numeric strings, emitted as varints
+    wrapper.valueType = TdfType::String;
+    for (const auto& [k, v] : values) {
+        wrapper.data[k] = std::make_shared<TdfValue>(k, TdfType::String, v);
+    }
+    current()[tag] = std::make_shared<TdfValue>(tag, TdfType::Map, TdfVariant(wrapper));
+    return *this;
+}
+
 TdfBuilder& TdfBuilder::beginMap(const std::string& tag, const std::string& keyType, const std::string& valueType) {
     TdfMapWrapper wrapper;
     wrapper.keyType   = parseTdfTypeStr(keyType);
@@ -919,12 +968,34 @@ TdfBuilder& TdfBuilder::beginStruct(const std::string& tag) {
 }
 
 TdfBuilder& TdfBuilder::beginStruct() {
+    // List element: append an (untagged) struct to the enclosing list.
+    if (!m_frames.empty() && std::holds_alternative<ListFrame>(m_frames.back())) {
+        auto& lf = std::get<ListFrame>(m_frames.back());
+        auto tdf = std::make_shared<TdfValue>("", TdfType::Struct, TdfStruct{});
+        lf.list->push_back(tdf);
+        m_frames.push_back(StructFrame{&std::get<TdfStruct>(tdf->value), ""});
+        return *this;
+    }
+    // Map value: struct keyed by the pending key.
     auto& mf = std::get<MapFrame>(m_frames.back());
     const std::string& key = mf.pendingKey;
 
     auto tdf = std::make_shared<TdfValue>(key, TdfType::Struct, TdfStruct{});
     mf.wrapper->data[key] = tdf;
     m_frames.push_back(StructFrame{&std::get<TdfStruct>(tdf->value), key});
+    return *this;
+}
+
+TdfBuilder& TdfBuilder::beginList(const std::string& tag) {
+    auto tdf = std::make_shared<TdfValue>(tag, TdfType::List, TdfList{});
+    current()[tag] = tdf;
+    m_frames.push_back(ListFrame{&std::get<TdfList>(tdf->value)});
+    return *this;
+}
+
+TdfBuilder& TdfBuilder::endList() {
+    if (!m_frames.empty() && std::holds_alternative<ListFrame>(m_frames.back()))
+        m_frames.pop_back();
     return *this;
 }
 

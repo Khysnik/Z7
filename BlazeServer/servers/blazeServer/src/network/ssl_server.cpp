@@ -3,6 +3,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+// The game uses an old version of OpenSSL, should be fine because it's on localhost
+
 namespace gw2::network {
 
 static void ssl_info_callback(const SSL* ssl, int where, int ret) {

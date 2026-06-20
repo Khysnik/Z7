@@ -6,9 +6,37 @@
 #include "utils/server_time.hpp"
 #include "config.hpp"
 
+#include <nlohmann/json.hpp>
+
+#include <fstream>
+#include <iterator>
+#include <map>
+#include <string>
+#include <unordered_map>
+
 namespace gw2::components {
 
 namespace {
+
+const std::unordered_map<std::string, std::string>& localizationTable() {
+    static const std::unordered_map<std::string, std::string> table = [] {
+        std::unordered_map<std::string, std::string> m;
+        std::ifstream f("data/localization.json", std::ios::binary);
+        if (!f) {
+            LOG_WARN("[util] data/localization.json missing; LocalizeStrings will echo ids");
+            return m;
+        }
+        try {
+            nlohmann::json j = nlohmann::json::parse(f);
+            for (const auto& [k, v] : j.items()) m.emplace(k, v.get<std::string>());
+        } catch (const std::exception& e) {
+            LOG_ERROR("[util] localization.json parse error: {}", e.what());
+        }
+        LOG_INFO("[util] loaded {} localized strings", m.size());
+        return m;
+    }();
+    return table;
+}
 
 int64_t getIntField(const blaze::TdfStruct& tdf, const std::string& tag, int64_t fallback = 0) {
     auto it = tdf.find(tag);
@@ -64,7 +92,10 @@ std::unique_ptr<blaze::Packet> Util::handlePacket(
         
         case blaze::UtilCommand::setClientState:
             return handleSetClientState(request, client);
-        
+
+        case blaze::UtilCommand::localizeStrings:
+            return handleLocalizeStrings(request, client);
+
         default:
             LOG_WARN("[Util] Unknown command: 0x{:04X}", command);
             return request.createReply();
@@ -78,7 +109,7 @@ std::unique_ptr<blaze::Packet> Util::handlePing(
     LOG_DEBUG("[util] ping");
 
     blaze::TdfBuilder builder;
-    builder.integer("STIM", blazeServerNow());  // Blaze time = 2x unix seconds
+    builder.integer("STIM", blazeServerNow());  // Blaze time = unix seconds
     
     auto reply = request.createReply();
     reply->setPayload(builder.build());
@@ -281,10 +312,6 @@ void Util::pushUserAddedNotification(std::shared_ptr<network::ClientConnection> 
 void Util::pushUserSessionExtendedDataUpdate(std::shared_ptr<network::ClientConnection> client) {
     uint64_t userId = client->getUserId();
 
-    // UserSessionExtendedDataUpdate schema (userextendeddatatypes.tdf:100):
-    //   DATA (UserSessionExtendedData)
-    //   USID (BlazeId)
-    //   SUBS (bool)  — true if pushed because of a subscription
     blaze::TdfBuilder builder;
     encodeExtendedData(builder);
     builder
@@ -301,6 +328,8 @@ void Util::pushUserSessionExtendedDataUpdate(std::shared_ptr<network::ClientConn
     client->sendPacket(std::move(notif));
     LOG_INFO("[util] pushed UserSessionExtendedDataUpdate notif (uid={})", userId);
 }
+
+// Serves different server/game configs
 
 std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
     const blaze::Packet& request,
@@ -339,6 +368,15 @@ std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
 
         builder.stringMap("CONF", {
             {"url", "https://editorial.gos.ea.com/PlantsVsZombies/GW2/config/pc/game.xml"},
+        });
+    } else if (section == "SPOTLIGHT") {
+        builder.stringMap("CONF", {
+            {"CLIENT_ID",     "pvz"},
+            {"ENABLED",       "true"},
+            {"FETCH_ENABLED", "false"},
+            {"PLACEMENT_IDS", "10186,10187,13359,13463"},
+            {"URL",           "https://emapi.prm.data.ea.com/em/v2/messages"},
+            {"URL_CLICKS",    "https://emapi.prm.data.ea.com/em/v2/clicks"},
         });
     } else if (section == "PVZ_ONLINE_PLAYLISTS") {
 
@@ -386,13 +424,62 @@ std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
             {"matchmakeResetProbability", "1"},
             {"packExternalPurchaseKillSwitch", "false"},
         });
-    } else {
+    } else if (section == "PVZ_PLAYLISTS") {
+
+        builder
+        .integer("LANG", 0)
+        .list("LSID", blaze::TdfType::String, {
+            "PL_01",
+            "ID_M_PLAYLIST_01_DESCRIPTION",
+            "PL_02",
+            "ID_M_PLAYLIST_06_DESCRIPTION",
+            "PL_03",
+            "ID_M_PLAYLIST_TURFTAKEOVER_DESC",
+            "PL_04",
+            "ID_M_PLAYLIST_03_DESCRIPTION",
+            "PL_05",
+            "ID_M_PLAYLIST_GB_DESC",
+            "PL_06",
+            "ID_M_PLAYLIST_DOM_DESC",
+            "PL_07",
+            "ID_M_VAN_CONFIRMED_DESC"
+        });
+    }
+    else {
 
         builder.stringMap("CONF", {});
     }
 
     auto reply = request.createReply();
     reply->setPayload(builder.build());
+    return reply;
+}
+
+std::unique_ptr<blaze::Packet> Util::handleLocalizeStrings(
+    const blaze::Packet& request,
+    std::shared_ptr<network::ClientConnection> client
+) {
+    auto tdf = request.getPayloadAsTdf();
+    const auto& table = localizationTable();
+
+    // SMAP: each requested string id -> localized text (fallback to the id itself).
+    std::map<std::string, std::string> smap;
+    size_t resolved = 0;
+    auto it = tdf.find("LSID");
+    if (it != tdf.end() && it->second && it->second->type == blaze::TdfType::List) {
+        for (const auto& elem : std::get<blaze::TdfList>(it->second->value)) {
+            if (!elem || elem->type != blaze::TdfType::String) continue;
+            const std::string& id = std::get<blaze::TdfString>(elem->value);
+            auto found = table.find(id);
+            if (found != table.end()) { smap[id] = found->second; ++resolved; }
+            else                      { smap[id] = id; }
+        }
+    }
+    LOG_INFO("[util] localizeStrings from {} ({} requested, {} resolved)",
+             client->getRemoteAddress(), smap.size(), resolved);
+
+    auto reply = request.createReply();
+    reply->setPayload(blaze::TdfBuilder().stringMap("SMAP", smap).build());
     return reply;
 }
 

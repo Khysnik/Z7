@@ -10,7 +10,7 @@ int main() {
     
     LOG_INFO("===========================================");
     LOG_INFO("  Garden Warfare 2 Server Emulator");
-    LOG_INFO("  Version 0.2.0");
+    LOG_INFO("  Version 0.9.9");
     LOG_INFO("===========================================");
     
     auto& config = gw2::utils::Config::instance();

@@ -226,7 +226,7 @@ void UserSessions::pushUserSessionExtendedDataUpdate(
         .endStruct()
         .string("TZ", "")
         .integer("UATT", 0)
-        .objectIdList("ULST", {{0xF002, 0x0002, static_cast<uint64_t>(config::connGroupId)}})
+        .objectIdList("ULST", {{0x7802, 0x0002, static_cast<uint64_t>(config::connGroupId)}})
     .endStruct()
     .integer("SUBS", 1)
     .integer("USID", static_cast<int64_t>(client->getUserId()));

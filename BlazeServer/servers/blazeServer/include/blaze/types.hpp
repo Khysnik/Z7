@@ -47,6 +47,8 @@ enum class BlazeError : uint32_t {
     
     ERR_GAME_FULL     = 0x00040001,
     ERR_GAME_NOT_FOUND = 0x00040002,
+
+    ERR_INSUFFICIENT_FUNDS = 0x08020001,  // PvzGw/Packs: not enough Coinz
 };
 
 enum class RedirectorCommand : uint16_t {

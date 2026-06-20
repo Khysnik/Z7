@@ -133,6 +133,8 @@ public:
     TdfBuilder& objectIdList(const std::string& tag, const std::vector<TdfObjectId>& values);
     TdfBuilder& stringMap(const std::string& tag, const std::map<std::string, std::string>& values);
     TdfBuilder& integerMap(const std::string& tag, const std::map<std::string, int64_t>& values);
+    // Map with integer keys (held as numeric strings) and string values.
+    TdfBuilder& intKeyStringMap(const std::string& tag, const std::map<std::string, std::string>& values);
 
     TdfBuilder& beginMap(const std::string& tag, const std::string& keyType, const std::string& valueType);
     TdfBuilder& endMap();
@@ -140,6 +142,11 @@ public:
     TdfBuilder& beginStruct(const std::string& tag);
     TdfBuilder& beginStruct();
     TdfBuilder& endStruct();
+
+    // List of structs: beginList("TAG") then beginStruct()...endStruct() per
+    // element, then endList(). Element type is inferred from the elements.
+    TdfBuilder& beginList(const std::string& tag);
+    TdfBuilder& endList();
 
     TdfStruct build();
 
@@ -150,7 +157,8 @@ private:
 
     struct StructFrame { TdfStruct* data; std::string tag; };
     struct MapFrame    { TdfMapWrapper* wrapper; std::string pendingKey; };
-    using Frame = std::variant<StructFrame, MapFrame>;
+    struct ListFrame   { TdfList* list; };
+    using Frame = std::variant<StructFrame, MapFrame, ListFrame>;
     std::vector<Frame> m_frames;
 
     TdfStruct& current();

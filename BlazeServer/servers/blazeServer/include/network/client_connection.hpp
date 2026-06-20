@@ -78,14 +78,16 @@ private:
     void handleWrite(const asio::error_code& error, size_t bytes_transferred);
     
     std::shared_ptr<asio::ssl::stream<tcp::socket>> m_socket;
+    // All socket reads/writes run on this strand so the (non-thread-safe) SSL
+    // stream is never accessed concurrently across io_context threads.
+    asio::strand<asio::any_io_executor> m_strand;
     uint64_t m_connectionId;
     std::atomic<bool> m_running;
-    
+
     std::vector<uint8_t> m_headerBuffer;
     std::vector<uint8_t> m_payloadBuffer;
-    
-    std::queue<std::vector<uint8_t>> m_writeQueue;
-    std::mutex m_writeMutex;
+
+    std::queue<std::vector<uint8_t>> m_writeQueue;  // accessed only on m_strand
     bool m_writing;
     
     PacketHandler m_packetHandler;

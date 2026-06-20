@@ -152,11 +152,15 @@ std::unique_ptr<Packet> Packet::createReply() const {
     return reply;
 }
 
-std::unique_ptr<Packet> Packet::createErrorReply(BlazeError /*error*/) const {
+std::unique_ptr<Packet> Packet::createErrorReply(BlazeError error) const {
     auto reply = std::make_unique<Packet>();
     reply->m_header = m_header;
+    reply->m_header.raw[4] = 0;   // no metadata, no payload in the error reply
+    reply->m_header.raw[5] = 0;
     uint8_t userIndex = m_header.raw[13] & 0x1F;
     reply->m_header.raw[13] = (static_cast<uint8_t>(MessageType::ErrorReply) << 5) | userIndex;
+    reply->m_header.raw[14] = (static_cast<uint32_t>(error) >> 8) & 0xFF;
+    reply->m_header.raw[15] =  static_cast<uint32_t>(error)       & 0xFF;
     return reply;
 }
 

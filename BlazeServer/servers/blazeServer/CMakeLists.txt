@@ -219,6 +219,12 @@ set(SERVER_SOURCES
         src/components/inventory.cpp
         src/components/game_manager.cpp
         src/components/stats.cpp
+        src/components/game_reporting.cpp
+
+        src/data/player_profile.cpp
+        src/data/inventory.cpp
+        src/data/packs.cpp
+        src/data/loot.cpp
 
         src/utils/logger.cpp
         src/utils/config.cpp
@@ -244,9 +250,13 @@ set(SERVER_HEADERS
         include/components/inventory.hpp
         include/components/game_manager.hpp
         include/components/stats.hpp
+        include/components/game_reporting.hpp
 
         include/data/licenses.hpp
         include/data/inventory.hpp
+        include/data/player_profile.hpp
+        include/data/packs.hpp
+        include/data/loot.hpp
 
         include/utils/logger.hpp
         include/utils/config.hpp
@@ -259,6 +269,7 @@ add_dependencies(gw2-server openssl_external)
 
 target_include_directories(gw2-server PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/extern
         ${ASIO_INCLUDE_DIR}
         ${OPENSSL_INCLUDE_DIR}
 )
@@ -276,13 +287,16 @@ target_compile_definitions(gw2-server PRIVATE
         ASIO_NO_DEPRECATED
 )
 
-# Copy runtime data (captured Stats payloads, etc.) next to the executable so the
-# relative "data/..." paths resolve when running from the build directory.
+# Seed runtime data next to the executable so relative "data/..." paths resolve
+# when running from the build directory. Static files are refreshed every build;
+# mutable save files (inventory/bytevault/profile) are seeded only if missing so
+# a rebuild never wipes the live save. See cmake/seed_data.cmake.
 add_custom_command(TARGET gw2-server POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/data
-        $<TARGET_FILE_DIR:gw2-server>/data
-        COMMENT "Copying data/ next to gw2-server")
+        COMMAND ${CMAKE_COMMAND}
+            -DSRC_DIR=${CMAKE_CURRENT_SOURCE_DIR}/data
+            -DDST_DIR=$<TARGET_FILE_DIR:gw2-server>/data
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/seed_data.cmake
+        COMMENT "Seeding data/ next to gw2-server (preserving live saves)")
 
 install(TARGETS gw2-server DESTINATION bin)
 install(DIRECTORY data/ DESTINATION bin/data)
