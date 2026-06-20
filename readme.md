@@ -1,4 +1,8 @@
-# Z7 Project
+<div align="center">
+  <img src="./assets/Z7_SERVERS_LOGO2.webp" alt="Z7 Logo" style="width: 10rem;">
+  <h1 style="font-size: 2.5rem; margin-top: 0.5rem;">Z7 Project</h1>
+</div>
+
 Z7 is an in-development Blaze server emulator for Plants vs Zombies: Garden Warfare 2. It is made up of 5 individual servers:
 
 - Blaze server - The core game server that handles authentication, loading save data and configs, and matchmaking.

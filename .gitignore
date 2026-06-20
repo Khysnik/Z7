@@ -7,3 +7,8 @@ bin/
 .vscode
 private/
 node_modules/
+.idea/
+cmake-build-*/
+dist/
+build.mjs
+cmake/
