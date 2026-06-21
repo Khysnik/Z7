@@ -26,10 +26,12 @@ namespace gw2 {
 Server::Server() : m_running(false){
 }
 
+// Server destructor, called on program exit
 Server::~Server() {
     stop();
 }
 
+// Initialize server components and SSL
 bool Server::init(const blaze::ServerConfig& config) {
     m_config = config;
     
@@ -51,6 +53,7 @@ bool Server::init(const blaze::ServerConfig& config) {
     return true;
 }
 
+// Set up and register all blaze components, and load all data files
 void Server::setupComponents() {
     auto& registry = blaze::ComponentRegistry::instance();
     
@@ -71,15 +74,7 @@ void Server::setupComponents() {
 
 }
 
-void Server::start() {
-    if (m_running) return;
-    
-    m_running = true;
-    
-    m_blazeServer->start();
-
-    LOG_INFO("Server started");
-}
+// Stop the server and all its components
 void Server::stop() {
     if (!m_running) return;
     
@@ -100,18 +95,32 @@ void Server::stop() {
     LOG_DEBUG("Server stopped");
 }
 
+// Start the Blaze server
+void Server::start() {
+    if (m_running) return;
+    
+    m_running = true;
+    
+    m_blazeServer->start();
+
+    LOG_INFO("Server started");
+}
+
+// Starts the server event loop (blocking)
 void Server::run() {
     unsigned int numThreads = std::thread::hardware_concurrency();
     if (numThreads < 2) numThreads = 2;
     
     LOG_DEBUG("Starting {} worker threads", numThreads);
     
+    // Eats all of your cpu cores!
     for (unsigned int i = 0; i < numThreads; i++) {
         m_threads.emplace_back([this]() {
             m_io_context.run();
         });
     }
 
+    // Tasty!
     for (auto& thread : m_threads) {
         if (thread.joinable()) {
             thread.join();
@@ -119,6 +128,7 @@ void Server::run() {
     }
 }
 
+// Handles client connections to the Blaze server, creating a ClientConnection for each and setting up packet handlers
 void Server::handleBlazeConnection(std::shared_ptr<asio::ssl::stream<asio::ip::tcp::socket>> socket) {
     uint64_t connId = m_nextConnectionId++;
     
@@ -127,6 +137,7 @@ void Server::handleBlazeConnection(std::shared_ptr<asio::ssl::stream<asio::ip::t
     client->setPacketHandler([this](auto client, auto packet) {
         if (!packet) return;
 
+        // Handles ping immediately 
         if (packet->getMessageType() == blaze::MessageType::Ping) {
             client->sendPacket(packet->createPingReply());
             return;

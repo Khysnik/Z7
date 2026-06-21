@@ -15,11 +15,19 @@ namespace {
 
 using nlohmann::json;
 
+// Load a json data file
 json loadJson(const std::string& path) {
     std::ifstream f(path, std::ios::binary);
-    if (!f) { LOG_WARN("[Loot] {} missing", path); return json::object(); }
-    try { return json::parse(f); }
-    catch (const std::exception& e) { LOG_ERROR("[Loot] {} parse error: {}", path, e.what()); return json::object(); }
+    if (!f) { 
+        LOG_WARN("[Loot] {} missing", path); 
+        return json::object(); 
+    }
+    try { 
+        return json::parse(f); 
+    } catch (const std::exception& e) { 
+        LOG_ERROR("[Loot] {} parse error: {}", path, e.what()); 
+        return json::object(); 
+    }
 }
 
 struct Consumable { std::string grants; int64_t qty; std::string rarity; std::string card; };
@@ -34,6 +42,7 @@ struct Tables {
     bool loaded = false;
 };
 
+// Rarity ranking and weights for random selection
 int rarityRank(const std::string& r) {
     if (r == "Common")    return 0;
     if (r == "Uncommon" || r == "Classic") return 1;
@@ -42,20 +51,35 @@ int rarityRank(const std::string& r) {
     if (r == "Legendary") return 4;
     return 0;
 }
+
+// Probablity table for the different rarities
 int rarityWeight(const std::string& r) {
-    switch (rarityRank(r)) { case 0: return 60; case 1: return 25; case 2: return 10; case 3: return 4; default: return 1; }
+    switch (rarityRank(r)) { 
+        case 0: return 60; 
+        case 1: return 25; 
+        case 2: return 10; 
+        case 3: return 4; 
+        default: return 1; 
+    }
 }
 
+// Load all loot tables from json files
 Tables& tables() {
     static Tables t;
     if (t.loaded) return t;
     t.loaded = true;
 
     json items = loadJson("data/items.json");
+
+    // Load consumables
     for (const auto& e : items.value("consumables", json::array()))
         t.consumables.push_back({e.value("grants",""), e.value("qty",(int64_t)1), e.value("rarity",""), e.value("card","")});
+
+    // Load cosmetics
     for (const auto& e : items.value("cosmetics", json::array()))
         t.cosmetics.push_back({e.value("key",""), e.value("rarity","")});
+
+    // Load sticker sets
     for (const auto& e : items.value("stickers", json::array())) {
         StickerSet st{e.value("variant",""), e.value("rarity",""), e.value("unlock",""), {}};
         for (const auto& p : e.value("pieces", json::array())) st.pieces.push_back(p.get<std::string>());
@@ -87,6 +111,8 @@ void grantVariantIfComplete(LootResult& out, const StickerSet& set) {
 }
 
 template <class T, class Pred>
+
+// Roll from the rarity table
 const T* pickWeighted(const std::vector<T>& v, Pred ok) {
     int total = 0;
     for (auto& e : v) if (ok(e)) total += rarityWeight(e.rarity);
@@ -96,6 +122,7 @@ const T* pickWeighted(const std::vector<T>& v, Pred ok) {
     return nullptr;
 }
 
+// Roll a consumable drop
 void rollConsumable(LootResult& out, int minRank) {
     auto* c = pickWeighted(tables().consumables, [&](const Consumable& e){ return rarityRank(e.rarity) >= minRank; });
     if (!c) c = pickWeighted(tables().consumables, [](const Consumable&){ return true; });
@@ -103,6 +130,8 @@ void rollConsumable(LootResult& out, int minRank) {
     out.consumables[c->grants] += c->qty;
     out.itli.push_back(c->card.empty() ? c->grants : c->card);  // reveal uses the cnsm card key
 }
+
+// Roll a cosmetic drop
 void rollCosmetic(LootResult& out, int minRank) {
     auto* c = pickWeighted(tables().cosmetics, [&](const Cosmetic& e){ return rarityRank(e.rarity) >= minRank && !alreadyHas(e.key, out); });
     if (!c) c = pickWeighted(tables().cosmetics, [&](const Cosmetic& e){ return !alreadyHas(e.key, out); });
@@ -110,9 +139,13 @@ void rollCosmetic(LootResult& out, int minRank) {
     out.unlocks.push_back(c->key);
     out.itli.push_back(c->key);
 }
+
+// Roll an item drop (consumable or cosmetic)
 void rollItem(LootResult& out, int minRank) {
     if (std::uniform_int_distribution<int>(0, 1)(rng())) rollConsumable(out, minRank); else rollCosmetic(out, minRank);
 }
+
+// Roll a sticker piece drop, avoiding dupes and checking variant completion
 bool rollStickerPiece(LootResult& out, const std::string& rarity) {
     // Pick a set of this rarity that still has an unowned piece, grant one piece, and complete the variant if it was the last missing piece.
     std::vector<const StickerSet*> cand;
@@ -131,6 +164,8 @@ bool rollStickerPiece(LootResult& out, const std::string& rarity) {
     grantVariantIfComplete(out, *set);
     return true;
 }
+
+// Roll a full sticker set
 void rollStickerSet(LootResult& out, int minRank, int maxRank, bool excludeLegendary) {
     std::vector<const StickerSet*> cand;
     for (auto& s : tables().stickers) {
@@ -154,6 +189,7 @@ void rollStickerSet(LootResult& out, int minRank, int maxRank, bool excludeLegen
     grantVariantIfComplete(out, *set);              // full set -> unlock the variant
 }
 
+// Run a single pack roll, which may grant a consumable, cosmetic, item, or sticker piece/set
 void runSlot(LootResult& out, const json& slot) {
     std::string source = slot.value("source", "");
     int minRank = slot.contains("minRarity") ? rarityRank(slot["minRarity"].get<std::string>()) : 0;
@@ -180,6 +216,7 @@ void runSlot(LootResult& out, const json& slot) {
 
 } // namespace
 
+// Get the cost of a pack by its key, or -1 if the pack doesn't exist
 int64_t packCost(const std::string& pkey) {
     const json& packs = tables().packs;
     auto it = packs.find(pkey);
@@ -187,6 +224,7 @@ int64_t packCost(const std::string& pkey) {
     return it->value("cost", (int64_t)0);
 }
 
+// Roll a pack by its keyname, returning invalid if the pack doesnt exist
 LootResult rollPack(const std::string& pkey) {
     LootResult out;
     const json& packs = tables().packs;

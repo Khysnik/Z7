@@ -22,6 +22,7 @@ bool endsWith(const std::string& s, const char* suffix) {
     return s.size() >= n && s.compare(s.size() - n, n, suffix) == 0;
 }
 
+// Format a stat value as either an integer or a float with 3 decimal places
 std::string formatValue(double v, bool asFloat) {
     if (asFloat) {
         std::ostringstream os;
@@ -40,6 +41,7 @@ PlayerProfile& PlayerProfile::instance() {
     return inst;
 }
 
+// Load the player profile from a json file
 bool PlayerProfile::load(const std::string& path) {
     std::ifstream f(path, std::ios::binary);
     if (!f) { LOG_WARN("[PlayerProfile] {} missing; progression will be empty", path); return false; }
@@ -52,10 +54,12 @@ bool PlayerProfile::load(const std::string& path) {
     m_stats.clear();
     m_index.clear();
 
+    // Load basic profile info and stats
     m_groupName = j.value("groupName", m_groupName);
     m_key       = j.value("key", m_key);
     m_last      = j.value("last", m_last);
     m_vid       = j.value("vid", m_vid);
+
     if (j.contains("entity")) {
         const auto& e = j["entity"];
         m_entityId     = e.value("id", m_entityId);
@@ -72,17 +76,26 @@ bool PlayerProfile::load(const std::string& path) {
         }
 
     m_loaded = true;
-    LOG_INFO("[PlayerProfile] loaded {} stats from {} (group={}, eid={})",
-             m_stats.size(), path, m_groupName, m_entityId);
+
+    LOG_INFO("[PlayerProfile] loaded {} stats from {} (group={}, eid={})", m_stats.size(), path, m_groupName, m_entityId);
     return true;
 }
 
+// Load stat aggregation rules from json, setting the save mode for each stat (e.g. "Set", "Increment", "Low", "High")
 bool PlayerProfile::loadAggregation(const std::string& path) {
     std::ifstream f(path, std::ios::binary);
-    if (!f) { LOG_WARN("[PlayerProfile] {} missing; merges use suffix heuristic", path); return false; }
+    if (!f) { 
+        LOG_WARN("[PlayerProfile] {} missing; merges use suffix heuristic", path); 
+        return false; 
+    }
     nlohmann::json j;
-    try { j = nlohmann::json::parse(f); }
-    catch (const std::exception& e) { LOG_ERROR("[PlayerProfile] {} parse error: {}", path, e.what()); return false; }
+    try { 
+        j = nlohmann::json::parse(f); 
+    }
+    catch (const std::exception& e) { 
+        LOG_ERROR("[PlayerProfile] {} parse error: {}", path, e.what()); 
+        return false; 
+    }
 
     m_aggregation.clear();
     for (const auto& [k, v] : j.items()) m_aggregation[k] = v.get<std::string>();
@@ -90,6 +103,7 @@ bool PlayerProfile::loadAggregation(const std::string& path) {
     return true;
 }
 
+// Save the player profile to its json file
 bool PlayerProfile::save() const {
     if (m_path.empty()) return false;
     ordered_json j;
@@ -107,7 +121,10 @@ bool PlayerProfile::save() const {
     j["stats"] = stats;
 
     std::ofstream f(m_path, std::ios::binary | std::ios::trunc);
-    if (!f) { LOG_ERROR("[PlayerProfile] cannot write {}", m_path); return false; }
+    if (!f) { 
+        LOG_ERROR("[PlayerProfile] cannot write {}", m_path); 
+        return false; 
+    }
     f << j.dump(2);
     return true;
 }
@@ -168,10 +185,16 @@ void PlayerProfile::applyGameReport(const std::unordered_map<std::string, double
         else                              rule = "Increment";
 
         double nv;
-        if (rule == "Set")       nv = value;
-        else if (rule == "Low")  { if (value >= kSentinel) continue; nv = std::min(old, value); }
-        else if (rule == "High") { if (value <= -kSentinel) continue; nv = std::max(old, value); }
-        else                     nv = old + value;
+        if (rule == "Set") nv = value;
+        else if (rule == "Low")  { 
+            if (value >= kSentinel) continue; 
+            nv = std::min(old, value); 
+        }
+        else if (rule == "High") { 
+            if (value <= -kSentinel) continue; 
+            nv = std::max(old, value); 
+        }
+        else nv = old + value;
         cur = formatValue(nv, asFloat);
         ++changed;
     }

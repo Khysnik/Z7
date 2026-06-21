@@ -24,8 +24,6 @@ ComponentRegistry& ComponentRegistry::instance() {
 }
 
 void ComponentRegistry::registerComponent(std::shared_ptr<Component> component) {
-    LOG_INFO("Registering component: {} (0x{:04X})", 
-             component->getName(), static_cast<uint16_t>(component->getId()));
     m_components[component->getId()] = component;
 }
 

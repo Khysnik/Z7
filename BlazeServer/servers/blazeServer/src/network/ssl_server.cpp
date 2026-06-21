@@ -41,6 +41,7 @@ SSLServer::~SSLServer() {
     stop();
 }
 
+// waow that's a lot of ssl versions
 bool SSLServer::configureSsl(const std::string& certPath, const std::string& keyPath)
 {
     try
@@ -49,12 +50,7 @@ bool SSLServer::configureSsl(const std::string& certPath, const std::string& key
 
         SSL_CTX_set_info_callback(ctx, ssl_info_callback);
 
-        SSL_CTX_clear_options(ctx,
-            SSL_OP_NO_SSLv3   |
-            SSL_OP_NO_TLSv1   |
-            SSL_OP_NO_TLSv1_1 |
-            SSL_OP_NO_TLSv1_2 |
-            SSL_OP_NO_TLSv1_3);
+        SSL_CTX_clear_options(ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3);
 
         if (!SSL_CTX_set_min_proto_version(ctx, 0))
             SSL_CTX_set_min_proto_version(ctx, SSL3_VERSION);
@@ -64,11 +60,7 @@ bool SSLServer::configureSsl(const std::string& certPath, const std::string& key
 
         SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_SINGLE_DH_USE);
 
-        SSL_CTX_clear_options(ctx,
-            SSL_OP_NO_SSLv3   |
-            SSL_OP_NO_TLSv1   |
-            SSL_OP_NO_TLSv1_1 |
-            SSL_OP_NO_TLSv1_2);
+        SSL_CTX_clear_options(ctx, SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1 | SSL_OP_NO_TLSv1_2);
 
         if (!SSL_CTX_set_cipher_list(ctx, "ALL:COMPLEMENTOFALL"))
             if (!SSL_CTX_set_cipher_list(ctx, "ALL"))
@@ -91,6 +83,7 @@ void SSLServer::setConnectionHandler(ConnectionHandler handler) {
     m_connectionHandler = handler;
 }
 
+// Start teh SSL server :)
 void SSLServer::start() {
     if (m_running) return;
     
@@ -113,6 +106,7 @@ void SSLServer::start() {
     }
 }
 
+// Stop teh SSL server :(
 void SSLServer::stop() {
     if (!m_running) return;
     

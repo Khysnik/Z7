@@ -7,14 +7,12 @@
 #include <arpa/inet.h>
 #endif
 
-// Hopefully i'll never ever have to touch this file again
+// god i hate networking
 
 namespace gw2::network {
 
-ClientConnection::ClientConnection(
-    std::shared_ptr<asio::ssl::stream<tcp::socket>> socket,
-    uint64_t connectionId
-)
+// ClientConnection constructor, registers a socket and connection ID
+ClientConnection::ClientConnection(std::shared_ptr<asio::ssl::stream<tcp::socket>> socket, uint64_t connectionId)
     : m_socket(socket)
     , m_strand(asio::make_strand(asio::any_io_executor(socket->get_executor())))
     , m_connectionId(connectionId)
@@ -24,10 +22,12 @@ ClientConnection::ClientConnection(
     m_headerBuffer.resize(sizeof(blaze::PacketHeader));
 }
 
+// ClientConnection destructor, called on program exit
 ClientConnection::~ClientConnection() {
     stop();
 }
 
+// Start reading from the client socket
 void ClientConnection::start() {
     if (m_running) return;
 
@@ -48,8 +48,9 @@ void ClientConnection::startWithBuffer(std::vector<uint8_t> prefetchedHeader) {
     handleReadHeader({}, sizeof(blaze::PacketHeader));
 }
 
+// Stop the client connection and close the socket
 void ClientConnection::stop() {
-    if (!m_running.exchange(false)) return;   // idempotent across threads
+    if (!m_running.exchange(false)) return;
 
     asio::error_code ec;
     m_socket->lowest_layer().shutdown(tcp::socket::shutdown_both, ec);
@@ -57,12 +58,13 @@ void ClientConnection::stop() {
     LOG_INFO("[blaze] disconnected {}", m_connectionId);
 
     if (m_disconnectHandler) {
-        // shared_from_this() throws if we're here from the destructor; ignore.
+        // shared_from_this throws if we're here from the destructor; ignore.
         try { m_disconnectHandler(shared_from_this()); }
         catch (const std::bad_weak_ptr&) {}
     }
 }
 
+// Send a fire2 serialized packet to the client
 void ClientConnection::sendPacket(const blaze::Packet& packet) {
     if (!m_running) return;
     
@@ -77,6 +79,8 @@ void ClientConnection::sendPacket(const blaze::Packet& packet) {
         std::string body;
         if (!tdf.empty()) {
             body = "\n" + blaze::tdfToBlaze(tdf);
+
+            // Truncate very large payloads to avoid spam
             if (body.size() > 2000) {
                 body.resize(2000);
                 body += "\n... (truncated)";
@@ -158,26 +162,26 @@ void ClientConnection::handleReadHeader(const asio::error_code& error, size_t by
     }
     
     // Parse header — Fire2 16-byte layout
-    const uint8_t* h = m_headerBuffer.data();
-    uint32_t payloadLen  = ((uint32_t)h[0] << 24) | ((uint32_t)h[1] << 16)
-                         | ((uint32_t)h[2] <<  8) |  h[3];
-    uint16_t metadataLen = ((uint16_t)h[4] << 8) | h[5];
-    uint16_t component   = ((uint16_t)h[6] << 8) | h[7];
-    uint16_t command     = ((uint16_t)h[8] << 8) | h[9];
-    uint32_t msgNum      = ((uint32_t)h[10] << 16) | ((uint32_t)h[11] << 8) | h[12];
-    uint8_t  msgType     = h[13] >> 5;
+    const uint8_t* header = m_headerBuffer.data();
+    uint32_t payloadLen  = ((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16) | ((uint32_t)header[2] <<  8) |  header[3];
+    uint16_t metadataLen = ((uint16_t)header[4] << 8) | header[5];
+    uint16_t component   = ((uint16_t)header[6] << 8) | header[7];
+    uint16_t command     = ((uint16_t)header[8] << 8) | header[9];
+    uint32_t msgNum      = ((uint32_t)header[10] << 16) | ((uint32_t)header[11] << 8) | header[12];
+    uint8_t  msgType     = header[13] >> 5;
 
-    // Raw bytes at DEBUG for header format investigation
+    // Log raw bytes at the DEBUG level for... debugging?
     {
         char hexbuf[16 * 3 + 1];
         size_t pos = 0;
         for (size_t i = 0; i < 16; ++i)
-            pos += snprintf(hexbuf + pos, sizeof(hexbuf) - pos, "%02X ", h[i]);
+            pos += snprintf(hexbuf + pos, sizeof(hexbuf) - pos, "%02X ", header[i]);
         LOG_DEBUG("[blaze] >> raw: {}", hexbuf);
     }
 
     (void)msgNum;
 
+    // Ignore incoming sketchy shit
     uint32_t totalPayload = (uint32_t)metadataLen + payloadLen;
     if (totalPayload > 65536) {
         LOG_ERROR("[Conn:{}] Payload length {} suspiciously large, dropping", m_connectionId, totalPayload);
@@ -185,11 +189,11 @@ void ClientConnection::handleReadHeader(const asio::error_code& error, size_t by
         return;
     }
 
+    // read payload if present
     if (totalPayload > 0) {
         doReadPayload(totalPayload);
-    }
-    else {
-        // No payload — log and dispatch
+    } else {
+        // No payload present, header only
         LOG_INFO("[recv] >> {}", blaze::blazePacketName(component, command, blaze::MessageType::Message));
         auto packet = blaze::Packet::parse(m_headerBuffer);
         if (packet && m_packetHandler) {
@@ -199,6 +203,7 @@ void ClientConnection::handleReadHeader(const asio::error_code& error, size_t by
     }
 }
 
+// Read packet payload
 void ClientConnection::doReadPayload(size_t length) {
     if (!m_running) return;
     
@@ -215,6 +220,7 @@ void ClientConnection::doReadPayload(size_t length) {
     );
 }
 
+// Handle completed payload read, parse the full packet, and send to the packet handler
 void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /*bytes_transferred*/) {
     if (!m_running) return;
     
@@ -248,12 +254,14 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     // Parse and handle packet
     auto packet = blaze::Packet::parse(fullPacket);
     if (packet) {
-        std::string name = blaze::blazePacketName(
-            static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), blaze::MessageType::Message);
+        std::string name = blaze::blazePacketName(static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), blaze::MessageType::Message);
         auto tdf = packet->getPayloadAsTdf();
         std::string body;
+
         if (!tdf.empty()) {
             body = "\n" + blaze::tdfToBlaze(tdf);
+
+            // Truncate very large payloads to avoid spam
             if (body.size() > 2000) {
                 body.resize(2000);
                 body += "\n... (truncated)";
@@ -270,8 +278,8 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     doReadHeader();
 }
 
+// Write the next packet in the queue to the client
 void ClientConnection::doWrite() {
-    // Always invoked on m_strand (from sendPacket's post or handleWrite).
     if (!m_running) return;
 
     if (m_writeQueue.empty()) {
@@ -288,10 +296,9 @@ void ClientConnection::doWrite() {
     asio::async_write(
         *m_socket,
         asio::buffer(data),
-        asio::bind_executor(m_strand,
-            [this, self](const asio::error_code& error, size_t bytes_transferred) {
-                handleWrite(error, bytes_transferred);
-            })
+        asio::bind_executor(m_strand, [this, self](const asio::error_code& error, size_t bytes_transferred) {
+            handleWrite(error, bytes_transferred);
+        })
     );
 }
 

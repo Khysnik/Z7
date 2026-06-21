@@ -9,6 +9,7 @@ namespace gw2::data {
 
 namespace {
 
+// load the pack template list from json
 const std::vector<PackTemplate>& load() {
     static std::vector<PackTemplate> packs;
     static bool loaded = false;
@@ -16,10 +17,17 @@ const std::vector<PackTemplate>& load() {
     loaded = true;
 
     std::ifstream f("data/packs.json", std::ios::binary);
-    if (!f) { LOG_WARN("[Packs] data/packs.json missing; pack catalog empty"); return packs; }
+    if (!f) { 
+        LOG_WARN("[Packs] data/packs.json missing; pack catalog empty"); 
+        return packs; 
+    }
     nlohmann::json j;
-    try { j = nlohmann::json::parse(f); }
-    catch (const std::exception& e) { LOG_ERROR("[Packs] data/packs.json parse error: {}", e.what()); return packs; }
+    try { 
+        j = nlohmann::json::parse(f); 
+    } catch (const std::exception& e) { 
+        LOG_ERROR("[Packs] data/packs.json parse error: {}", e.what()); 
+        return packs; 
+    }
 
     for (const auto& e : j.value("packs", nlohmann::json::array())) {
         PackTemplate p;
@@ -43,6 +51,8 @@ const std::vector<PackTemplate>& load() {
 
 } // namespace
 
-const std::vector<PackTemplate>& getPackTemplates() { return load(); }
+const std::vector<PackTemplate>& getPackTemplates() { 
+    return load(); 
+}
 
 } // namespace gw2::data

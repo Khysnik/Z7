@@ -48,11 +48,6 @@ void TdfEncoder::encodeTag(const std::string& tag) {
     writeByte(((v2 & 0x03) << 6) | v3);
 }
 
-// Blaze integer wire format: the FIRST byte carries only 6 magnitude bits, with
-// bit 6 = sign and bit 7 = continuation; every following byte carries 7 bits.
-// (This differs from plain 7-bit LEB128 -- decoding an LEB128 integer with this
-// scheme halves the value, which is what caused coins to read as ~half and the
-// old "time * 2" workaround. See decodeVarInt and utils/server_time.hpp.)
 void TdfEncoder::encodeVarInt(int64_t value) {
     bool negative = value < 0;
     uint64_t mag  = negative ? static_cast<uint64_t>(-(value + 1)) + 1
@@ -70,8 +65,6 @@ void TdfEncoder::encodeVarInt(int64_t value) {
     }
 }
 
-// Unsigned values (object-type components, ids, tdf ids) share the integer
-// container: 6 bits in the first byte (bit 6 left zero), 7 bits thereafter.
 void TdfEncoder::encodeVarUInt(uint64_t value) {
     uint8_t first = value & 0x3F;
     value >>= 6;
@@ -134,6 +127,7 @@ void TdfEncoder::encodeStruct(const std::string& tag, const TdfStruct& value) {
     writeByte(0x00);
 }
 
+// waow that's a lot of types
 void TdfEncoder::encodeChild(const TdfValue& v) {
     switch (v.type) {
         case TdfType::Integer:
@@ -486,8 +480,6 @@ TdfType TdfDecoder::decodeType() {
     return static_cast<TdfType>(readByte());
 }
 
-// Blaze integer: first byte = 6 magnitude bits + sign (bit 6) + continuation
-// (bit 7); subsequent bytes = 7 magnitude bits + continuation. Mirrors encodeVarInt.
 int64_t TdfDecoder::decodeVarInt() {
     if (!hasMore()) return 0;
     uint8_t first = readByte();
@@ -1176,7 +1168,12 @@ std::string blazePacketName(uint16_t comp, uint16_t cmd, MessageType msgType) {
         { 0x7802000C, "ServerDraining"                },
     };
 
-    struct Names { const char* req; const char* rsp; };
+    struct Names { 
+        const char* req; 
+        const char* rsp; 
+    };
+
+    // big-ass table of req/res names
     static const std::unordered_map<uint32_t, Names> kTable = {
         // Util (0x0009)
         { 0x00090001, { "FetchClientConfigRequest",                  "FetchConfigResponse"                  } },
