@@ -1,4 +1,3 @@
-//editorial server, serves static config files and game assets
 import { log } from "../../utils/log.js";
 import { serverDir } from "../../utils/appdir.js";
 import express from "express"

@@ -438,13 +438,16 @@ TdfStruct TdfDecoder::decode() {
                 value->value = decodeTimeValue();
                 break;
             default:
-                LOG_WARN("Unknown TDF type: 0x{:02X}", static_cast<int>(type));
-                break;
+                // We can't know an unknown type's length, so continuing would read
+                // mid-value and drift (garbage tags -> read past the buffer -> throw).
+                // Stop here and return what we have; the caller only needs a best effort.
+                LOG_WARN("Unknown TDF type: 0x{:02X} (stopping decode)", static_cast<int>(type));
+                return result;
         }
-        
+
         result[tag] = value;
     }
-    
+
     return result;
 }
 

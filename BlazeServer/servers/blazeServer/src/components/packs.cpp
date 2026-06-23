@@ -21,7 +21,7 @@ std::string getStr(const blaze::TdfStruct& tdf, const std::string& tag) {
     return std::get<blaze::TdfString>(it->second->value);
 }
 
-// Full pack catalog (DESL) from data/packs.json — the GetTemplate response.
+// Full pack catalog (DESL) from data/packs.json
 blaze::TdfStruct buildTemplateResponse() {
     blaze::TdfBuilder b;
     b.beginList("DESL");
@@ -90,19 +90,18 @@ blaze::TdfStruct buildOpenResponse(const std::string& pkey, std::shared_ptr<Clie
         .endStruct()
         .build();
 
-    // Push the live inventory update so coins/items appear immediately instead of
-    // only after a map switch or reload. Retail sends Inventory Notif0x000B
-    // (0x0803/0x000B): FFCB = new Coinz balance, ILST = granted consumables (ckey
-    // -> qty), UID = player id. The reply's ORSP only drives the reveal UI; the
-    // HUD/inventory refresh comes from this notification. (See live capture
-    // decoded/live_blaze_full.txt lines 75131+.)
+    // Push the live inventory update so coins/items/unlocks appear immediately
     if (loot.valid && client) {
+        // ILST is the full inventory delta. Include the unlocks (cosmetics, sticker pieces, character licenses)
+        std::map<std::string, int64_t> ilst = cnsm;
+        for (const auto& key : loot.unlocks) ilst[key] = 1;
+
         auto notif = std::make_unique<blaze::Packet>(
             static_cast<blaze::ComponentId>(0x0803), 0x000B,
             blaze::MessageType::Notification, 0);
         notif->setPayload(blaze::TdfBuilder()
             .integer("FFCB", balance)
-            .integerMap("ILST", cnsm)
+            .integerMap("ILST", ilst)
             .integer("UID", config::blazeId)
             .build());
         client->sendPacket(std::move(notif));

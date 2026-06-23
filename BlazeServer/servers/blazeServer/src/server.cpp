@@ -137,7 +137,7 @@ void Server::handleBlazeConnection(std::shared_ptr<asio::ssl::stream<asio::ip::t
     client->setPacketHandler([this](auto client, auto packet) {
         if (!packet) return;
 
-        // Handles ping immediately 
+        // Handles ping immediately
         if (packet->getMessageType() == blaze::MessageType::Ping) {
             client->sendPacket(packet->createPingReply());
             return;
@@ -145,8 +145,18 @@ void Server::handleBlazeConnection(std::shared_ptr<asio::ssl::stream<asio::ip::t
 
         auto& registry = blaze::ComponentRegistry::instance();
 
-        if (auto response = registry.routePacket(*packet, client)) {
-            client->sendPacket(std::move(response));
+        try {
+            if (auto response = registry.routePacket(*packet, client)) {
+                client->sendPacket(std::move(response));
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("[dispatch] exception handling comp=0x{:04X} cmd=0x{:04X}: {}",
+                      static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), e.what());
+            try { client->sendPacket(packet->createErrorReply(blaze::BlazeError::ERR_SYSTEM)); }
+            catch (...) {}
+        } catch (...) {
+            LOG_ERROR("[dispatch] unknown exception handling comp=0x{:04X} cmd=0x{:04X}",
+                      static_cast<uint16_t>(packet->getComponent()), packet->getCommand());
         }
     });
     

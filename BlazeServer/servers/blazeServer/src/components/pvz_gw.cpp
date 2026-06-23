@@ -4,19 +4,24 @@
 #include "network/client_connection.hpp"
 #include "components/user_sessions.hpp"
 #include "data/licenses.hpp"
+#include "data/inventory.hpp"
+#include "data/loot.hpp"
 #include "config.hpp"
 #include "utils/logger.hpp"
 #include "utils/server_time.hpp"
-
+#include <nlohmann/json.hpp>
+#include <algorithm>
 #include <map>
 #include <string>
-
+#include <fstream>
 #include <ctime>
 #include <vector>
 
 namespace gw2::components {
 
 namespace {
+
+using nlohmann::json;
 
 int64_t getIntField(const blaze::TdfStruct& tdf, const std::string& tag, int64_t fallback = 0) {
     auto it = tdf.find(tag);
@@ -29,55 +34,123 @@ int64_t getIntField(const blaze::TdfStruct& tdf, const std::string& tag, int64_t
     return std::get<blaze::TdfInteger>(it->second->value);
 }
 
-blaze::TdfStruct buildBlackMarketData(int64_t blazeId) {
-    return blaze::TdfBuilder()
-        .integer("ACID", 0)
-        .integer("BLID", blazeId)
-        .integer("IPID", 0)
-        .integer("VIEW", 0)
-        .beginList("SLTS")
-            .beginStruct()
-                .string("DESC", "Limited-time slot")
-                .integer("HBPT", 0)
-                .integer("ITID", 0)
-                .string("NAME", "Black Market")
-                .integer("PRCE", 0)
-                .integer("SLID", 0)
-            .endStruct()
-        .endList()
-        .build();
+std::string getStrField(const blaze::TdfStruct& tdf, const std::string& tag) {
+    auto it = tdf.find(tag);
+    if (it == tdf.end() || !it->second || it->second->type != blaze::TdfType::String) return {};
+    return std::get<blaze::TdfString>(it->second->value);
 }
 
-// Append one MSLT entry (inbox/server message: BFN promo, Rux black-market, etc.)
-// to the list currently open on the builder. SRCE/TIDS/USER are addressed to the
-// local player via the global identity config. ATTR is a map<Integer,String>:
-// numeric field ids (65280=title, 65282=body, 777777=image url, ...) -> content.
-void addUserMessage(blaze::TdfBuilder& b, int64_t prio, int64_t mgid, int64_t time,
-                    const std::map<std::string, std::string>& attr) {
+// Load + cache a JSON content file from data/* (e.g. blackmarket.json, community.json).
+const json& content(const char* file) {
+    static std::map<std::string, json> cache;
+    auto it = cache.find(file);
+    if (it != cache.end()) return it->second;
+    json j = json::object();
+    std::ifstream f(std::string("data/") + file, std::ios::binary);
+    if (f) {
+        try { j = json::parse(f); }
+        catch (const std::exception& e) { LOG_ERROR("[PvzGw] {} parse error: {}", file, e.what()); }
+    } else {
+        LOG_WARN("[PvzGw] data/{} missing", file);
+    }
+    return cache.emplace(file, std::move(j)).first->second;
+}
+
+// Grant an item key: customizations/characters are unlocks; everything else is a consumable/currency quantity.
+void grantItem(const std::string& key, int64_t qty = 1) {
+    const std::string& k = key;
+    if (k.rfind("Cus",0)==0 || k.rfind("stk",0)==0 || k.rfind("aschar",0)==0 || k.rfind("socha",0)==0 || k.rfind("ab",0)==0)
+        data::addInventoryUnlock(k);
+    else
+        data::addInventoryItem(k, qty);
+}
+
+// Push the live inventory notification (coins + items) so the HUD/booth update without a relog. FFCB = new balance, ILST = the delta (non-empty or the client skips it).
+void pushInventoryNotif(std::shared_ptr<network::ClientConnection> client, const std::map<std::string,int64_t>& ilst) {
+    auto notif = std::make_unique<blaze::Packet>(static_cast<blaze::ComponentId>(0x0803), 0x000B, blaze::MessageType::Notification, 0);
+    notif->setPayload(blaze::TdfBuilder()
+        .integer("FFCB", data::getInventoryQuantity("Coinz"))
+        .integerMap("ILST", ilst)
+        .integer("UID", config::blazeId)
+        .build());
+    client->sendPacket(std::move(notif));
+}
+
+// Rux's Black Market, loaded from data/blackmarket.json
+blaze::TdfStruct buildBlackMarketData(int64_t blazeId, bool includeSlots) {
+    (void)blazeId;
+    const json& bm = content("blackmarket.json");
+    std::vector<std::string> have, none, still;
+    for (const auto& s : bm.value("haveItemsDialog", json::array()))
+        have.push_back(s.get<std::string>());
+    for (const auto& s : bm.value("noItemsDialog",   json::array()))
+        none.push_back(s.get<std::string>());
+    for (const auto& s : bm.value("stillDecidingDialog", json::array()))
+        still.push_back(s.get<std::string>());
+    if (still.empty())
+        still.push_back("Having trouble making a decision?");
+
+    // SCTU = unix time the market state next changes (rotation expiry)
+    const int64_t bmBase   = bm.value("rotationBaseUnix",    (int64_t)1782126000); // 2026-06-22 11:00 UTC
+    const int64_t bmPeriod = bm.value("rotationPeriodSecs",  (int64_t)1209600);    // 14 days
+    int64_t now = blazeServerNow();
+    int64_t sctu = bmBase + ((now - bmBase) / bmPeriod) * bmPeriod;
+    while (sctu <= now)
+        sctu += bmPeriod;
+
+    // DATA = BlackMarketData (Blaze::PvzGw::BlackMarketData)
+    blaze::TdfBuilder b;
+    b.beginStruct("DATA")
+        .string("ACID", bm.value("acid", std::string("z7blackmarket")))   // activationId
+        .list("IVDI", blaze::TdfType::String, have)                                          // initialViewDialogue
+        .list("NIDI", blaze::TdfType::String, none)                                          // noAvailableItemsDialogue
+        .integer("SCTU", sctu);                                                              // stateChangeTimeUnix (future)
+    if (includeSlots) {
+        b.beginList("SLTS");                                                                     // slots (BlackMarketSlotData)
+        for (const auto& s : bm.value("slots", json::array())) {
+            b.beginStruct()
+                .string("DESC", s.value("desc", std::string("")))        // description
+                .string("ITID", s.value("itid", std::string("")))        // itemId
+                .string("NAME", s.value("name", std::string("")))        // name
+                .integer("PRIC", s.value("price", (int64_t)0))                          // price
+                .integer("PURC", 0)                                                    // hasBeenPurchased
+                .string("SLID", s.value("slid", std::string("")))        // slotId
+            .endStruct();
+        }
+        b.endList();
+    }
+    b.list("SVDI", blaze::TdfType::String, still)                                           // subsequentViewDialogue
+     .integer("VIEW", 0)                                                               // hasBeenViewed
+    .endStruct();
+    return b.build();
+}
+
+// Add one MSLT entry (PVZ_NEWS message: BFN promo, Rux black-market, etc.)
+void addUserMessage(blaze::TdfBuilder& b, int64_t prio, int64_t mgid, int64_t time, const std::map<std::string, std::string>& attr) {
     b.beginStruct()
-        .integer("IFMG", 0)
-        .integer("IPNM", 0)
-        .integer("PRIO", prio)
-        .beginStruct("SMSG")
-            .integer("FLAG", 1)
-            .integer("MGID", mgid)
-            .beginStruct("PYLD")
-                .intKeyStringMap("ATTR", attr)
-                .integer("FLAG", 9)
-                .integer("STAT", 13)
-                .integer("TAG", 0)
-                .intList("TIDS", { config::blazeId })
-                .objectType("TTYP", 0x7802, 0x0001)
-                .integer("TYPE", 2)
+        .integer("IFMG", 0)                                             // isForcedMessage
+        .integer("IPNM", 0)                                             // isPinnedMessage
+        .integer("PRIO", prio)                                               // sortingPriority
+        .beginStruct("SMSG")                                                     // serverMessage
+            .integer("FLAG", 1)                                         // flags
+            .integer("MGID", mgid)                                           // messageId
+            .beginStruct("PYLD")                                                 // payload (ClientMessage)
+                .intKeyStringMap("ATTR", attr)                               // attrMap
+                .integer("FLAG", 9)                                     // flags
+                .integer("STAT", 13)                                    // status
+                .integer("TAG", 0)                                      // (anon)
+                .intList("TIDS", { config::blazeId })               // targetIds
+                .objectType("TTYP", 0x7802, 0x0001)            // targetType
+                .integer("TYPE", 2)                                     // type
             .endStruct()
-            .objectId("SRCE", 0x7802, 0x0001, config::blazeId)
-            .integer("TIME", time)
-            .beginStruct("USER")
-                .binary("EXBB", {})
-                .integer("EXID", config::nucleusId)
-                .integer("ID", config::blazeId)
-                .string("NAME", config::persona)
-                .string("NASP", config::nasp)
+            .objectId("SRCE", 0x7802, 0x0001, config::blazeId) // source
+            .integer("TIME", time)                                           // timestamp
+            .beginStruct("USER")                                                 // sourceIdent (UserIdentification)
+                .binary("EXBB", {})                                  // externalBlob
+                .integer("EXID", config::nucleusId)                     // externalId
+                .integer("ID", config::blazeId)                         // blazeId
+                .string("NAME", config::persona)                        // name
+                .string("NASP", config::nasp)                           // personaNamespace
             .endStruct()
         .endStruct()
     .endStruct();
@@ -90,10 +163,7 @@ PvzGwComponent::PvzGwComponent()
 {
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     uint16_t command = request.getCommand();
 
     switch (static_cast<blaze::PvzGwCommand>(command)) {
@@ -101,6 +171,8 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(
             return handleCheckUserMessages(request, client);
         case blaze::PvzGwCommand::setXPMultiplier:
             return handleSetXPMultiplier(request, client);
+        case blaze::PvzGwCommand::getStoreItemList:
+            return handleGetStoreItemList(request, client);
         case blaze::PvzGwCommand::getDailyQuests:
             return handleGetDailyQuests(request, client);
         case blaze::PvzGwCommand::getUserMessages:
@@ -141,19 +213,14 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(
     }
 }
 
-    std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetUserMessages(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+    std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetUserMessages(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getUserMessages from {}", client->getRemoteAddress());
 
+    // GetUserMessagesResponse: MSLT = messages (list of PVZGWServerMessage).
     blaze::TdfBuilder b;
-    b.beginList("MSLT");
+    b.beginList("MSLT");                                                 // messages
 
-    // ATTR map field ids (real, post-codec-fix): 65280=title, 65282=body,
-    // 777777=image url, 777780/777781/777782=image meta. (These were previously
-    // the doubled values 130560/130562/1555505/... which only worked because the
-    // old LEB128 encoder halved them on the wire. See blaze-tdf-integer-encoding.)
+    // ATTR map field ids: 65280=title, 65282=body, 777777=image url, 777780/777781/777782=image meta.
 
     // [0] PvZ: Battle for Neighborville promotion (inbox message)
     addUserMessage(b, 7000, 102793108, 1693150944LL, {
@@ -162,7 +229,7 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(
 A new battle is blooming – are you ready to take it on?
 
 This used to be an advertisement for BFN, but now it can be whatever you want thanks to the Z7 emulator!)"},
-        {"777777", "https://editorial.gos.ea.com/PlantsVsZombies/GW2/image/userinbox/promotion/PvZGW2_BFN_StandardEdition.jpg"},
+        {"777777", "https://localhost:42220/PlantsVsZombies/GW2/image/userinbox/promotion/PvZGW2_BFN_StandardEdition.jpg"},
         {"777780", "0"},
         {"777781", ""},
         {"777782", "_qPPhIUcQbkGYTf"},
@@ -179,7 +246,7 @@ Drop by and buy before I go bye bye and you cry!
 See you in the Plant or Zombie base!
 
 Tro-lo-lo!)"},
-        {"777777", "https://editorial.gos.ea.com/PlantsVsZombies/GW2/image/userinbox/blackmarket/rux.jpg"},
+        {"777777", "https://localhost:42220/PlantsVsZombies/GW2/image/userinbox/blackmarket/rux.jpg"},
         {"777780", "0"},
         {"777781", ""},
         {"777782", "_LHbVSdWOGkG-KW"},
@@ -191,45 +258,106 @@ Tro-lo-lo!)"},
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetXPMultiplier(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetXPMultiplier(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] setXPMultiplier from {}", client->getRemoteAddress());
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .floatValue("LXPM", 1.0f)
-        .floatValue("NXPM", 1.0f)
+        .floatValue("LXPM", 1.0f)                       // lastXPMultiplier
+        .floatValue("NXPM", 1.0f)                       // newXPMultiplier
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetDailyQuests(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetStoreItemList(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
+    LOG_INFO("[PvzGw] getStoreItemList from {}", client->getRemoteAddress());
+
+    struct Pack {
+        const char* stid;
+        const char* title;
+        const char* grant;
+        const char* image;
+        const char* hideOn;
+        const char* showOn;
+    };
+    static const Pack kPacks[] = {
+        {"2", "Handy Coins Pack",     "56000",   "UI/Assets/Screens/PurchaseCoins/CoinPack1", "",               ""},
+        {"3", "Modest Coins Pack",    "120000",  "UI/Assets/Screens/PurchaseCoins/CoinPack1", "",               ""},
+        {"4", "Incredi-coins Pack",   "280000",  "UI/Assets/Screens/PurchaseCoins/CoinPack2", "",               ""},
+        {"5", "Ultimate Coins Pack",  "455000",  "UI/Assets/Screens/PurchaseCoins/CoinPack3", "canadanottrial", ""},
+        {"6", "Epic Coins Pack",      "630000",  "UI/Assets/Screens/PurchaseCoins/CoinPack3", "",               ""},
+        {"7", "",                     "1645000", "",                                          "",               ""},
+        {"9", "Mega Coins Pack",      "1500000", "UI/Assets/Screens/PurchaseCoins/CoinPack4", "",               "45_coins_rel"},
+        {"8", "Humongous Coins Pack", "2500000", "UI/Assets/Screens/PurchaseCoins/CoinPack5", "",               "65_coins_rel"},
+        {"1", "Humongous Coins Pack", "2250000", "UI/Assets/Screens/PurchaseCoins/CoinPack5", "",               "65_coins_test"},
+    };
+
+    blaze::TdfBuilder b;
+    b.beginList("SLST");                                                // storeItemList (StoreItem)
+    for (const auto& p : kPacks) {
+        b.beginStruct()
+            .beginList("SIFL");                                         // customFields (StoreItemCustomField{CFNA name, CFDA data})
+        auto field = [&](const char* name, const char* data) {
+            b.beginStruct()
+                .string("CFDA", data)
+                .string("CFNA", name)
+            .endStruct();
+        };
+        field("currencyCode",        "");
+        field("categoryId",          "ingamecurrency");
+        field("consumableGrantCount", p.grant);
+        field("hideOnLicense",       p.hideOn);
+        field("showOnLicense",       p.showOn);
+        field("title",               p.title);
+        field("tagStringId",         "");
+        field("image",               p.image);
+        b.endList()
+            .string("STDI", p.stid)                          // storeItemDisplayId
+            .string("STID", p.stid)                          // storeItemId
+        .endStruct();
+    }
+    b.endList();
+
+    auto reply = request.createReply();
+    reply->setPayload(b.build());
+    return reply;
+}
+
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetDailyQuests(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getDailyQuests from {}", client->getRemoteAddress());
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .int64("DQAT", blazeServerNow())                          // Blaze time = unix seconds
-        .int64("DQET", toBlazeTime(std::time(nullptr) + 24 * 60 * 60))
-        .list("DQID", blaze::TdfType::String, {})
-        .int64("DQTE", 24 * 60 * 60)
+        .int64("DQAT", blazeServerNow())                                           // activationTime (Blaze time = unix seconds)
+        .int64("DQET", toBlazeTime(std::time(nullptr) + 24 * 60 * 60))  // expiryTime
+        .list("DQID", blaze::TdfType::String, {})                              // dailyQuests
+        .int64("DQTE", 24 * 60 * 60)                                               // timeToExpiry
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPersistedLicenses(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPersistedLicenses(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getPersistedLicenses from {}", client->getRemoteAddress());
+
+    std::vector<std::string> lics = data::getPersistedLicenses();
+
+    auto grant = [&](const std::string& s) {
+        if (!s.empty() && std::find(lics.begin(), lics.end(), s) == lics.end())
+            lics.push_back(s);
+    };
+
+    //blackmarket killswitch
+    const json& bm = content("blackmarket.json");
+    for (const auto& l : bm.value("ownedLicenses", json::array()))
+        grant(l.get<std::string>());
+
+    // Killswitches from data/extra_licenses.json.
+    for (const auto& l : content("extra_licenses.json").value("licenses", json::array()))
+        grant(l.get<std::string>());
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .list("LICS", blaze::TdfType::String, data::getPersistedLicenses())
+        .list("LICS", blaze::TdfType::String, lics)                           // licenses
         .build());
     client->sendPacket(*reply);
 
@@ -241,29 +369,27 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPersistedLicenses(
     return nullptr;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetOnlineAccessEntitlements(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetOnlineAccessEntitlements(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] setOnlineAccessEntitlements from {}", client->getRemoteAddress());
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .boolean("ANEG", false)
+        .boolean("ANEG", false)                                        // anyNewEntitlementsGranted
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetClientSettings(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetClientSettings(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     auto requestTdf = request.getPayloadAsTdf();
     int64_t changelist = getIntField(requestTdf, "CHAN", 0);
     LOG_INFO("[PvzGw] getClientSettings from {} (CHAN={})",
              client->getRemoteAddress(), changelist);
 
+    // Just a note on killswitches, the killswitch licenses defined below don't enable the feature. The licenses below must be added to handleGetPersistedLicenses to enable the killswitched feature
     static const std::vector<std::pair<std::string, std::string>> kSettings = {
+        {"Game.LogFileEnable", "true"},
+        {"Online.LogLevel", "LogLevel_Debug"},
+        {"Online.BlazeLogLevel", "3"},
         {"Online.TelemetryPinSettings.ServerAddress",   "https://pin-river.data.ea.com"},
         {"Online.TelemetryPinSettings.ServerPort",      "443"},
         {"Online.TelemetryPinSettings.Environment",     "prod"},
@@ -320,15 +446,15 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetClientSettings(
     };
 
     blaze::TdfBuilder b;
-    b.beginList("GENS");
+    b.beginList("GENS");                                                                              // generalSettingsList
     for (auto& [iden, valu] : kSettings)
-        b.beginStruct().string("IDEN", iden).string("VALU", valu).endStruct();
+        b.beginStruct().string("IDEN", iden).string("VALU", valu).endStruct();   // identifier / value
     b.endList()
-     .beginStruct("PACF")
-        .integer("CSUM", 0)
-        .string("PRSF", "")
-        .integer("PSTA", 0)
-        .string("PURL", "")
+     .beginStruct("PACF")                                                                             // patchSettings (ServerPatchSettings)
+        .integer("CSUM", 0)                                                                  // checksum
+        .string("PRSF", "")                                                               // protocolSuffix
+        .integer("PSTA", 0)                                                                  // status
+        .string("PURL", "")                                                               // (anon - patch URL)
      .endStruct();
 
     auto reply = request.createReply();
@@ -341,144 +467,254 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityAchievements(
     std::shared_ptr<network::ClientConnection> client
 ) {
     LOG_INFO("[PvzGw] getCommunityAchievements from {}", client->getRemoteAddress());
-    return request.createReply();
+
+    int64_t now = blazeServerNow();
+    (void)now;
+
+    auto reply = request.createReply();
+    reply->setPayload(blaze::TdfBuilder()
+        .beginStruct("ACDA")
+            .string ("AHID", "z7cc1")                       // achievementId: unique challenge id
+            .string ("NAME", "Elemental Clash Community Challenge") // name: title shown in the UI
+            .string ("DESC", "Select your element and get involved in the Elemental Clash Community Challenge! Every vanquish with Toxic, Fire, Ice, and Electric types count. Win, and make off with armfuls of rewards!") // desc: longer description
+            .string ("IMG",  "https://i.ytimg.com/vi/EL_XvNLEBAw/sddefault.jpg") // image url
+            .string ("PEHD", "Your Elemental Vanquishes")   // personalHeader: header above the personal bar
+            .string ("REHD", "Community Goals:")            // rewardHeader: header above the rewards list
+            .integer("CHAC", 1)                                // challengeActive: 1 = challenge is running
+            .integer("COAC", 1)                                // contributionActive: 1 = player can contribute now
+            .integer("PTS",  200699)                           // communityProgress: current shared score
+            .integer("BRTD", 15000000)                         // bronzeThreshold: score needed for bronze
+            .integer("SLTD", 30000000)                         // silverThreshold: score needed for silver
+            .integer("GDTD", 50000000)                         // goldThreshold:  score needed for gold
+            .string ("BHOW", "Wondrous Pack of Greatness")  // bronzeReward
+            .string ("SHOW", "Infinity Pack")               // silverReward
+            .string ("GHOW", "Legendary Item")              // goldReward
+            .integer("BRCL", 0)                                // bronzeRewardCollected
+            .integer("SLCL", 0)                                // silverRewardCollected
+            .integer("GOCL", 0)                                // goldRewardCollected
+            .integer("URTD", 1000)                             // userThreshold: this player's personal goal
+            .integer("USPS", 127)                              // userProgress:  this player's progress so far
+            .integer("SCFS", 86400)                            // secondsFromStart: how long the event has run
+            .integer("NEST", 0)                                // secondsToNextEvent: countdown to next event
+            .integer("STCE", 7 * 86400)                        // secondsToCollectionExpiryTime: time left to collect
+            .integer("STRE", 7 * 86400)                        // secondsToRewardExpiryTime: time left to claim rewards
+            .integer("RRSC", 60)                               // refreshRateSeconds: how often the client re-polls
+            .integer("PCSC", 30)                               // proximityCooldownSeconds: contribution cooldown
+        .endStruct()
+        .build());
+    return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleClaimCommunityEventReward(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleClaimCommunityEventReward(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] claimCommunityEventReward from {}", client->getRemoteAddress());
+
+    // roll a pack + inventory update. TODO: proper loot tables
+    const json& ev = content("community.json");
+    std::string pk = ev.value("eventReward", std::string(""));
+    std::map<std::string,int64_t> ilst;
+    if (!pk.empty()) {
+        auto loot = data::rollPack(pk);
+        if (loot.valid) {
+            for (const auto& [ais, qty] : loot.consumables) {
+                data::addInventoryItem(ais, qty);
+                ilst[ais]+=qty;
+            }
+            for (const auto& key : loot.unlocks) {
+                data::addInventoryUnlock(key);
+                ilst[key]=1;
+            }
+            data::saveInventory();
+        }
+    }
+    if (!ilst.empty())
+        pushInventoryNotif(client, ilst);
+
     return request.createReply();
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetBlackMarketData(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetBlackMarketData(const blaze::Packet& request,std::shared_ptr<network::ClientConnection> client) {
     auto requestTdf = request.getPayloadAsTdf();
     int64_t blazeId = getIntField(requestTdf, "BLID", client->getUserId());
     int64_t includePostInteractionData = getIntField(requestTdf, "IPID", 0);
-    LOG_INFO("[PvzGw] getBlackMarketData from {} (BLID={}, IPID={})",
-             client->getRemoteAddress(), blazeId, includePostInteractionData);
+    LOG_INFO("[PvzGw] getBlackMarketData from {} (BLID={}, IPID={})", client->getRemoteAddress(), blazeId, includePostInteractionData);
 
     auto reply = request.createReply();
-    reply->setPayload(buildBlackMarketData(blazeId));
+    reply->setPayload(buildBlackMarketData(blazeId, includePostInteractionData != 0));
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(const blaze::Packet& request,std::shared_ptr<network::ClientConnection> client) {
     auto requestTdf = request.getPayloadAsTdf();
-    LOG_INFO("[PvzGw] purchaseBlackMarketItem from {} (BLID={}, SLID={}, ACID={})",
-             client->getRemoteAddress(),
-             getIntField(requestTdf, "BLID", client->getUserId()),
-             getIntField(requestTdf, "SLID", 0),
-             getIntField(requestTdf, "ACID", 0));
-    return request.createReply();
+    std::string slid = getStrField(requestTdf, "SLID");
+    LOG_INFO("[PvzGw] purchaseBlackMarketItem from {} (SLID={})", client->getRemoteAddress(), slid);
+
+    // Find the slot in blackmarket.json.
+    const json& bm = content("blackmarket.json");
+    const json* slot = nullptr;
+    for (const auto& s : bm.value("slots", json::array()))
+        if (s.value("slid", std::string("")) == slid) {
+            slot = &s;
+            break;
+        }
+    if (!slot) {
+        return request.createReply();  // unknown slot -> ack, no grant
+    }
+
+    int64_t price = slot->value("price", (int64_t)0);
+    std::string itid = slot->value("itid", std::string(""));
+    if (data::getInventoryQuantity("Coinz") < price) {
+        LOG_WARN("[PvzGw] black market: insufficient funds for {} ({} coins)", itid, price);
+        return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
+    }
+
+    int64_t balance = data::addInventoryItem("Coinz", -price);
+    grantItem(itid);
+    data::saveInventory();
+    LOG_INFO("[PvzGw] black market: bought {} for {} -> Coinz {}", itid, price, balance);
+
+    // HUD update
+    pushInventoryNotif(client, { {itid, 1} });
+
+    auto reply = request.createReply();
+    reply->setPayload(blaze::TdfBuilder().integer("SUCC", 1).build());  // success
+    return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetBlackMarketViewed(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
-    auto requestTdf = request.getPayloadAsTdf();
-    LOG_INFO("[PvzGw] setBlackMarketViewed from {} (BLID={}, VIEW={})",
-             client->getRemoteAddress(),
-             getIntField(requestTdf, "BLID", client->getUserId()),
-             getIntField(requestTdf, "VIEW", 0));
-    return request.createReply();
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetBlackMarketViewed(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
+    LOG_INFO("[PvzGw] setBlackMarketViewed from {}", client->getRemoteAddress());
+
+    auto reply = request.createReply();
+    reply->setPayload(blaze::TdfBuilder().integer("SUCC", 1).build());  // success
+    return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityPortalData(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
-    auto requestTdf = request.getPayloadAsTdf();
-    int64_t blazeId = getIntField(requestTdf, "BLID", client->getUserId());
-    LOG_INFO("[PvzGw] getCommunityPortalData from {} (BLID={})",
-             client->getRemoteAddress(), blazeId);
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityPortalData(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
+    LOG_INFO("[PvzGw] getCommunityPortalData from {}", client->getRemoteAddress());
+
+    // Load community event config from community.json
+    const json& ev = content("community.json");
+    bool feat = ev.value("featured", false);
+    int64_t now = blazeServerNow();
+    int64_t st  = now + (int64_t)(ev.value("startOffsetDays", -1.0) * 86400.0);
+    int64_t et  = now + (int64_t)(ev.value("endOffsetDays",   14.0) * 86400.0);
+    int64_t gpe = now + (int64_t)(ev.value("grandPrizeOffsetDays", 14.0) * 86400.0);
+    int64_t flag = feat ? -1 : 65;   // crazyOption slots: -1 active, 65 idle
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .beginStruct("CPDT")
-            .integer("ACID", 0)
-            .integer("BLID", blazeId)
-            .string("NIDI", "No portal events available")
-            .integer("SCTU", blazeServerNow())  // Blaze time = unix seconds
-            .string("SVDI", "Community portal updates will appear here.")
-            .integer("VIEW", 0)
+        .beginStruct("CPDA")                                                                       // communityPortalData
+            .integer("COFI", flag).integer("COFO", flag).integer("COOE", flag)   // crazyOption5/4/1
+            .integer("COTH", flag).integer("COTW", flag).integer("COZE", flag)   // crazyOption3/2/0
+            .string ("DESC", ev.value("description", std::string("")))      // eventDesc
+            .integer("EVAC", feat ? 1 : 0)                                                     // eventActive
+            .integer("EVET", et)                                                               // eventEndTime
+            .string ("EVID", ev.value("eventId", std::string("")))          // eventId (e.g. "CP215")
+            .integer("EVST", st)                                                               // eventStartTime
+            .integer("FCPR", ev.value("firstChestScore",  (int64_t)10))                    // firstChestPrice
+            .integer("FRCH", 0)                                                           // firstChestOpened
+            .integer("GPAC", feat ? 1 : 0)                                                     // gracePeriodActive
+            .integer("GPET", gpe)                                                              // gracePeriodEndTime
+            .string ("IMUL", ev.value("imageUrl", std::string("")))         // imageUrl
+            .string ("NAME", ev.value("name", std::string("")))             // eventName
+            .integer("PCSC", 15).integer("RRSC", 30)                          // proximityCooldownSeconds / refreshRateSeconds
+            .integer("SCCH", 0)                                                           // secondChestOpened
+            .integer("SCPR", ev.value("secondChestScore", (int64_t)30))                    // secondChestPrice
+            .integer("TCPR", ev.value("thirdChestScore",  (int64_t)50))                    // thirdChestPrice
+            .integer("THCD", 0)                                                           // thirdChestOpened
         .endStruct()
-        .integer("FNEV", 0)
+        .integer("FOEV", feat ? 1 : 0)                                                         // foundEvent
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleOpenCommunityPortalChest(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
-    auto requestTdf = request.getPayloadAsTdf();
-    LOG_INFO("[PvzGw] openCommunityPortalChest from {} (ACID={}, BLID={})",
-             client->getRemoteAddress(),
-             getIntField(requestTdf, "ACID", 0),
-             getIntField(requestTdf, "BLID", client->getUserId()));
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleOpenCommunityPortalChest(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
+    LOG_INFO("[PvzGw] openCommunityPortalChest from {}", client->getRemoteAddress());
+
+    // roll a pack and push the inventory update
+    const json& ev = content("community.json");
+    std::string pk = ev.value("chestReward", std::string(""));
+    std::map<std::string,int64_t> ilst;
+    if (!pk.empty()) {
+        auto loot = data::rollPack(pk);
+        if (loot.valid) {
+            for (const auto& [ais, qty] : loot.consumables) {
+                data::addInventoryItem(ais, qty);
+                ilst[ais]+=qty;
+            }
+            for (const auto& key : loot.unlocks) {
+                data::addInventoryUnlock(key);
+                ilst[key]=1;
+            }
+            data::saveInventory();
+            LOG_INFO("[PvzGw] portal chest '{}': {} consumables, {} unlocks", pk, loot.consumables.size(), loot.unlocks.size());
+        }
+    }
+    if (!ilst.empty()) pushInventoryNotif(client, ilst);
     return request.createReply();
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPlaylists(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPlaylists(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getPlaylists from {}", client->getRemoteAddress());
+
+    const json& pj = content("playlists.json");
+    blaze::TdfBuilder b;
+    b.beginList("PL");                                                                        // sections
+    for (const auto& sec : pj.value("sections", json::array())) {
+        b.beginStruct()
+            .string("ID", sec.value("id", std::string("")))            // section id
+            .beginList("PL");                                                                 // playlists
+        for (const auto& pl : sec.value("playlists", json::array())) {
+            b.beginStruct()
+                .string("DESC", pl.value("desc", std::string("")))     // description
+                .string("ID",   pl.value("id", std::string("")))       // playlist id
+                .string("LOAD", pl.value("load", std::string("")))     // loadScreenOverride
+                .string("NAME", pl.value("name", std::string("")));    // displayName
+            std::vector<std::string> psc;
+            for (const auto& s : pl.value("scenarios", json::array()))
+                psc.push_back(s.get<std::string>());
+            if (!psc.empty()) b.list("SCEN", blaze::TdfType::String, psc);                // scenarioOverrides
+            b.endStruct();
+        }
+        b.endList();
+        std::vector<std::string> ssc;
+        for (const auto& s : sec.value("scenarios", json::array()))
+            ssc.push_back(s.get<std::string>());
+        b.list("SCEN", blaze::TdfType::String, ssc)                                      // section scenarios
+        .endStruct();
+    }
+    b.endList();
+
     auto reply = request.createReply();
-    reply->setPayload(blaze::TdfBuilder()
-        .list("PLYT", blaze::TdfType::Struct, {})
-        .build());
+    reply->setPayload(b.build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPlaylistRotation(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetPlaylistRotation(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getPlaylistRotation from {}", client->getRemoteAddress());
+
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .list("ROTA", blaze::TdfType::Struct, {})
+        .list("ROTA", blaze::TdfType::Struct, {})                       // empty
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetLoyaltyChallengeData(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetLoyaltyChallengeData(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getLoyaltyChallengeData from {}", client->getRemoteAddress());
     return request.createReply();
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleCheckUserMessages(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleCheckUserMessages(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] checkUserMessages from {}", client->getRemoteAddress());
 
-    // Retail returns {PEID:0}; an empty reply makes the client treat the inbox
-    // as unavailable and never follow up with getUserMessages.
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .integer("PEID", 0)
+        .integer("PEID", 0)                                            // result
         .build());
     return reply;
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleUpdateUserMessageStatus(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleUpdateUserMessageStatus(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     auto requestTdf = request.getPayloadAsTdf();
     LOG_INFO("[PvzGw] updateUserMessageStatus from {} (MID={})",
              client->getRemoteAddress(),
@@ -486,15 +722,62 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleUpdateUserMessageStatus(
     return request.createReply();
 }
 
-std::unique_ptr<blaze::Packet> PvzGwComponent::handleForceClientNotification(
-    const blaze::Packet& request,
-    std::shared_ptr<network::ClientConnection> client
-) {
+std::unique_ptr<blaze::Packet> PvzGwComponent::handleForceClientNotification(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     auto requestTdf = request.getPayloadAsTdf();
     int64_t blazeId = getIntField(requestTdf, "BLID", 0);
     int64_t type = getIntField(requestTdf, "TYPE", 0);
     LOG_INFO("[PvzGw] forceClientNotification from {} (BLID={}, TYPE={})",
              client->getRemoteAddress(), blazeId, type);
+
+    // TYPE 1002 = ClientNotifierMessageType_BlackMarketAvailability
+    if (type == 1002) {
+        const json& bm = content("blackmarket.json");
+        const int64_t base   = bm.value("rotationBaseUnix",   (int64_t)1782126000);
+        const int64_t period = bm.value("rotationPeriodSecs", (int64_t)1209600);
+        int64_t now = blazeServerNow();
+        int64_t end = base + ((now - base) / period) * period;
+        while (end <= now) end += period;
+        int64_t start = end - period;
+
+        std::map<std::string, std::string> attr = {
+            {"888002", bm.value("availabilityToken", std::string("hRZI7QNrRpci8YfCCjdkocFwKI5FcEiXRPi$MAG531"))},
+            {"888003", std::to_string(end)},     // rotation end (SCTU)
+            {"888004", "0"},
+            {"888005", "10"},
+            {"888006", std::to_string(start)},   // rotation start
+        };
+
+        // ServerMessage (Blaze::Messaging::ServerMessage); PYLD = ClientMessage.
+        blaze::TdfStruct payload = blaze::TdfBuilder()
+            .integer("FLAG", 0)                                         // flags
+            .integer("MGID", 174088773)                                 // messageId
+            .beginStruct("PYLD")                                                 // payload
+                .intKeyStringMap("ATTR", attr)                               // attrMap
+                .integer("FLAG", 0)                                     // flags
+                .integer("STAT", 0)                                     // status
+                .integer("TAG", 0)
+                .intList("TIDS", { config::blazeId })               // targetIds
+                .objectType("TTYP", 0x7802, 0x0001)            // targetType
+                .integer("TYPE", 1002)                                  // BlackMarketAvailability
+            .endStruct()
+            .objectId("SRCE", 0, 0, 0)                      // source
+            .integer("TIME", now)                                            // timestamp
+            .beginStruct("USER")                                                 // sourceIdent (empty)
+                .binary("EXBB", {})
+                .integer("EXID", 0)
+                .integer("ID", 0)
+                .string("NAME", "")
+                .string("NASP", "")
+            .endStruct()
+            .build();
+
+        auto notif = std::make_unique<blaze::Packet>(
+            static_cast<blaze::ComponentId>(0x000f), 0x0001,
+            blaze::MessageType::Notification, m_nextNotifMsgNum++);
+        notif->setPayload(payload);
+        client->sendPacket(std::move(notif));
+        LOG_INFO("[PvzGw] pushed BlackMarketAvailability notif (window {}..{})", start, end);
+    }
 
     return request.createReply();
 }

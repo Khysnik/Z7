@@ -1,0 +1,38 @@
+{
+  "sections": [
+    {
+      "id": "community",
+      "scenarios": ["findDedicated1", "findDedicated2"],
+      "playlists": [
+        {
+          "id": "community",
+          "name": "Tactical Team-up",
+          "desc": "Plants and zombies are spawning! Play as one half of a tank/healer super-team and win the day! Join the plants as either Citron or Sunflower, or join the zombies as either All-Star or Scientist. Fight, heal, win.",
+          "load": "_pvz/UI/Assets/LoadScreen_CP_CrazySettings",
+          "scenarios": ["findDedicatedCommunity", "findCreateDedicated24"]
+        }
+      ]
+    },
+    {
+      "id": "tournament",
+      "scenarios": ["findDedicated1", "findDedicated2"],
+      "playlists": [
+        { "id": "CvD",              "name": "Gnomiverse XL",   "desc": "An extra-large mysterious cavern of Gnomish origin. The source of their time shards? The origin of time itself?! Who knows what unknown Gnomey-ness is contained within...", "load": "_pvz/UI/Assets/LoadScreen_CP_CatsVsDinos" },
+        { "id": "GBAsia",           "name": "Zen Peak",        "desc": "Zen Peak was the birthplace of Zen from which all magic sparkle originated.  Both Plants and Zombies vacation here during off peak travel times.", "load": "_pvz/UI/Assets/LoadScreen_Coop_Asia" },
+        { "id": "GBBrainStreet",    "name": "Zombopolis",      "desc": "There's big trouble in not so little Zombopolis. The Plants must stop the Zombies from launching Zombot into battle before it's too late!\n", "load": "_pvz/UI/Assets/LoadScreen_Coop_BrainStreet" },
+        { "id": "GBDino",           "name": "Boney Island",    "desc": "Boney Island mysteriously attracts all that are lost.  Ships, Aircraft, even time itself.  Chances are, if you are lost... You are here!", "load": "_pvz/UI/Assets/LoadScreen_Coop_Dino" },
+        { "id": "GBEgypt",          "name": "Sandy Sands",     "desc": "Sandy Sands is amazingly full of sand.  Known worldwide for its sandcastles, sandals, sandbags, sanders, sandboxes and sandwiches.", "load": "_pvz/UI/Assets/LoadScreen_Coop_Egypt" },
+        { "id": "GBRome",           "name": "Colizeum",        "desc": "For Rent:  One large Colizeum.  Open space concept, lots of room for activities!  Currently lacking electricity, plumbing, doors, windows and roof.  Serious inquiries only. ", "load": "_pvz/UI/Assets/LoadScreen_Coop_Rome" },
+        { "id": "GBSnow",           "name": "Frosty Creek",    "desc": "The only thing colder than a frosty creek is frozen frost itself!  Also liquid nitrogen, ice cream, very cold rocks & frozen bread.", "load": "_pvz/UI/Assets/LoadScreen_Coop_Snow" },
+        { "id": "GBSpace",          "name": "Lunar Landing",   "desc": "A secret staging area from which Dr. Zomboss plans to dominate every planet in the solar system.  It also has space golf!", "load": "_pvz/UI/Assets/LoadScreen_Coop_Space" },
+        { "id": "GBTimePark",       "name": "Time Park",       "desc": "What do you get when you mix four time periods and interconnect them with ancient portals reverse engineered from gnome technology?  We're not sure either.", "load": "_pvz/UI/Assets/LoadScreen_Coop_TimePark" },
+        { "id": "GBZombossFactory", "name": "Z-Tech Factory",  "desc": "The Zomboss Z-Tech Factory is one of many facilities from which Dr. Zomboss mass produces his Zombie army.  It has an amazing break room.", "load": "_pvz/UI/Assets/LoadScreen_Coop_Factory" },
+        { "id": "GBZomburbia",      "name": "Frontline Flats", "desc": "An up-and-coming gated community that's quickly expanding. Laundry facilities near-by. Delivery available.", "load": "_pvz/UI/Assets/LoadScreen_Coop_Zomburbia" },
+        { "id": "GnGSnow",          "name": "Great White North","desc": "Emerging from the depths below, the Zombies are launching an all out attack on the Great White North.  Can they free the Yeti King and usher in a new ice age?", "load": "_pvz/UI/Assets/LoadScreen_Rush_Snow" },
+        { "id": "GnGThemepark",     "name": "Seeds of Time",   "desc": "The time travel theme park was built in 1202 by a group of wizards that pooled their resources together in the hopes of making a fortune.  Now the Zombies want it, because it's a fun place to be!", "load": "_pvz/UI/Assets/LoadScreen_Rush_ThemePark" },
+        { "id": "HerbalZomburbia",  "name": "Zomburbia",       "desc": "It's that time of year again.  The next batch of fresh Zombie recruits are about to graduate, but the Plants have other plans for them... Hint:  It involves toilet paper!", "load": "_pvz/UI/Assets/LoadScreen_Rush_Zomburbia" },
+        { "id": "tournament",       "name": "Cats vs. Dinos",  "desc": "Expeditions to the Gnomiverse XL don't go without their confrontations. It's time for newly upgraded Mechanical Cats to go head to head with Mechanical Dinosaurs in an all out battle of attrition.", "load": "_pvz/UI/Assets/LoadScreen_CP_CatsVsDinos" }
+      ]
+    }
+  ]
+}

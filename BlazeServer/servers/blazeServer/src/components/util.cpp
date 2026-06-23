@@ -38,6 +38,32 @@ const std::unordered_map<std::string, std::string>& localizationTable() {
     return table;
 }
 
+// PVZ_PLAYLISTS fetchClientConfig CONF map (the multiplayer browser playlists)
+const std::map<std::string, std::string>& playlistsConfig() {
+    static const std::map<std::string, std::string> cfg = [] {
+        std::map<std::string, std::string> m;
+        std::ifstream f("data/playlists_config.json", std::ios::binary);
+        if (!f) {
+            LOG_WARN("[util] data/playlists_config.json missing; PVZ_PLAYLISTS will be empty");
+            return m;
+        }
+        try {
+            nlohmann::json j = nlohmann::json::parse(f);
+            // NB: iterate a reference into `j` -- calling .items() on the temporary
+            // returned by j.value(...) dangles and crashes.
+            if (j.contains("CONF") && j["CONF"].is_object()) {
+                for (const auto& [k, v] : j["CONF"].items())
+                    m.emplace(k, v.get<std::string>());
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("[util] playlists_config.json parse error: {}", e.what());
+        }
+        LOG_INFO("[util] loaded {} multiplayer playlists", m.size());
+        return m;
+    }();
+    return cfg;
+}
+
 int64_t getIntField(const blaze::TdfStruct& tdf, const std::string& tag, int64_t fallback = 0) {
     auto it = tdf.find(tag);
     if (it == tdf.end() || !it->second) {
@@ -63,9 +89,7 @@ std::string getStringField(const blaze::TdfStruct& tdf, const std::string& tag,
 
 } // namespace
 
-Util::Util()
-    : Component(blaze::ComponentId::Util, "Util")
-{
+Util::Util(): Component(blaze::ComponentId::Util, "Util"){
 }
 
 std::unique_ptr<blaze::Packet> Util::handlePacket(
@@ -108,8 +132,9 @@ std::unique_ptr<blaze::Packet> Util::handlePing(
 ) {
     LOG_DEBUG("[util] ping");
 
+    // PingResponse (Blaze::Util::PingResponse)
     blaze::TdfBuilder builder;
-    builder.integer("STIM", blazeServerNow());  // Blaze time = unix seconds
+    builder.integer("STIM", blazeServerNow());  // serverTime (Blaze time = unix seconds)
     
     auto reply = request.createReply();
     reply->setPayload(builder.build());
@@ -123,11 +148,11 @@ std::unique_ptr<blaze::Packet> Util::handlePreAuth(
 ) {
     blaze::TdfBuilder builder;
     builder
-        .string("ASRC", "310695")
-        .intList("CIDS", {61448, 1, 61449, 25, 61450, 27, 4, 7, 9, 10, 33, 126978, 15, 61440, 61441, 61442, 61443, 61444, 61445, 61446, 61447, 3984})
-        .string("CLID", "PVZGW2-PC-SERVER-BLAZE")
-        .beginStruct("CONF")
-            .stringMap("CONF", {
+        .string("ASRC", "310695")                                       // authenticationSource
+        .intList("CIDS", {61448, 1, 61449, 25, 61450, 27, 4, 7, 9, 10, 33, 126978, 15, 61440, 61441, 61442, 61443, 61444, 61445, 61446, 61447, 3984}) // componentIds
+        .string("CLID", "PVZGW2-PC-SERVER-BLAZE")                       // clientId
+        .beginStruct("CONF")                                            // config (FetchConfigResponse)
+            .stringMap("CONF", {                                        // config map
                 {"Override_ProtoHttp_LoginStateMachine_DedicatedServer_vers", "770,0,NULL"},
                 {"associationListSkipInitialSet",  "1"},
                 {"autoReconnectEnabled",           "0"},
@@ -149,55 +174,30 @@ std::unique_ptr<blaze::Packet> Util::handlePreAuth(
                 {"xboxOneStringValidationUri",     "client-strings.xboxlive.com"},
             })
         .endStruct()
-        .string("ESRC", "310695")
-        .string("INST", "plantsvszombies-gw2-pc")
-        .integer("MAID", 3310897674)
-        .integer("MINR", 1)
-        .string("NASP", "cem_ea_id")
-        .string("PILD", "")
-        .string("PLAT", "pc")
-        .beginStruct("QOSS")
-            .beginStruct("BWPS")
-                .string("PSA", "")
-                .integer("PSP", 0)
+        .string("ESRC", "310695")                                       // entitlementSource
+        .string("INST", "plantsvszombies-gw2-pc")                       // serviceName
+        .integer("MAID", 3310897674)                                    // machineId
+        .integer("MINR", 1)                                             // underageSupported
+        .string("NASP", "cem_ea_id")                                    // personaNamespace
+        .string("PILD", "")                                            // legalDocGameIdentifier
+        .string("PLAT", "pc")                                          // platform
+        .beginStruct("QOSS")                                            // qosSettings (QosConfigInfo)
+            .beginStruct("BWPS")                                        // bandwidthPingSiteInfo (QosPingSiteInfo)
+                .string("PSA", "")                                      // address
+                .integer("PSP", 0)                                     // port
             .endStruct()
-            .integer("LNP", 10)
-            .beginMap("LTPS", "string", "struct")
-                .string("bio-dub")
-                .beginStruct()
-                    .string("PSA", "qos-prod-bio-dub-common-common.gos.ea.com")
-                    .integer("PSP", 34976)
-                .endStruct()
-                .string("bio-iad")
-                .beginStruct()
-                    .string("PSA", "qos-prod-bio-iad-common-common.gos.ea.com")
-                    .integer("PSP", 34976)
-                .endStruct()
+            .integer("LNP", 10)                                         // numLatencyProbes
+            .beginMap("LTPS", "string", "struct")                       // pingSiteInfoByAliasMap (alias -> QosPingSiteInfo{PSA address, PSP port})
                 .string("bio-sjc")
                 .beginStruct()
-                    .string("PSA", "qos-prod-bio-sjc-common-common.gos.ea.com")
-                    .integer("PSP", 34976)
-                .endStruct()
-                .string("bio-syd")
-                .beginStruct()
-                    .string("PSA", "qos-prod-bio-syd-common-common.gos.ea.com")
-                    .integer("PSP", 34976)
-                .endStruct()
-                .string("i3d-gru")
-                .beginStruct()
-                    .string("PSA", "qos-prod-m3d-brz-common-common.gos.ea.com")
-                    .integer("PSP", 34976)
-                .endStruct()
-                .string("i3d-nrt")
-                .beginStruct()
-                    .string("PSA", "qos-prod-m3d-nrt-common-common.gos.ea.com")
+                    .string("PSA", "localhost")
                     .integer("PSP", 34976)
                 .endStruct()
             .endMap()
-            .integer("TIME", 10000000)
+            .integer("TIME", 10000000)                                  // timeout
         .endStruct()
-        .string("RSRC", "310695")
-        .string("SVER", "Blaze 15.1.1.4.6 (CL# 2136954)");
+        .string("RSRC", "310695")                                       // registrationSource
+        .string("SVER", "Blaze 15.1.1.4.6 (CL# 2136954)");             // serverVersion
 
     auto reply = request.createReply();
     reply->setPayload(builder.build());
@@ -208,33 +208,34 @@ std::unique_ptr<blaze::Packet> Util::handlePostAuth(
     const blaze::Packet& request,
     std::shared_ptr<network::ClientConnection> client
 ) {
+    // PostAuthResponse (Blaze::Util::PostAuthResponse)
     blaze::TdfBuilder builder;
     builder
-        .beginStruct("TELE")
-            .string("ADRS", "https://river.data.ea.com")
-            .integer("ANON", 0)
-            .string("DISA", "")
-            .integer("EDCT", 0)
-            .string("FILT", "-UION/****")
-            .integer("LOC", config::locale)
-            .integer("MINR", 0)
-            .string("NOOK", "")
-            .integer("PORT", 827)
-            .integer("SDLY", 29976)
-            .string("SESS", "Qa8AqZFw1/G")
-            .string("SKEY", "weirdbinarykey")
-            .integer("SPCT", 139)
-            .string("STIM", "Default")
-            .string("SVNM", "telemetry-3-common")
+        .beginStruct("TELE")                                            // telemetryServer (GetTelemetryServerResponse)
+            .string("ADRS", "https://river.data.ea.com")               // address
+            .integer("ANON", 0)                                        // isAnonymous
+            .string("DISA", "")                                        // disable
+            .integer("EDCT", 0)                                        // enableDisconnectTelemetry
+            .string("FILT", "-UION/****")                             // filter
+            .integer("LOC", config::locale)                           // locale
+            .integer("MINR", 0)                                        // underage
+            .string("NOOK", "")                                       // noToggleOk
+            .integer("PORT", 827)                                     // port
+            .integer("SDLY", 29976)                                   // sendDelay
+            .string("SESS", "Qa8AqZFw1/G")                            // sessionID
+            .string("SKEY", "weirdbinarykey")                         // (anon - session key)
+            .integer("SPCT", 139)                                     // sendPercentage
+            .string("STIM", "Default")                                // useServerTime
+            .string("SVNM", "telemetry-3-common")                     // telemetryServiceName
         .endStruct()
-        .beginStruct("TICK")
-            .string("ADRS", "10.10.78.150")
-            .integer("PORT", 17959)
-            .string("SKEY", "1006900723798,10.10.78.150:8999,plantsvszombies-gw2-pc,10,50,50,50,50,0,0")
+        .beginStruct("TICK")                                            // tickerServer (GetTickerServerResponse)
+            .string("ADRS", "10.10.78.150")                          // address
+            .integer("PORT", 17959)                                   // port
+            .string("SKEY", "1006900723798,10.10.78.150:8999,plantsvszombies-gw2-pc,10,50,50,50,50,0,0") // (anon - session key)
         .endStruct()
-        .beginStruct("UROP")
-            .integer("TMOP", 0)
-            .integer("UID", config::blazeId)
+        .beginStruct("UROP")                                            // userOptions (UserOptions)
+            .integer("TMOP", 0)                                       // telemetryOpt
+            .integer("UID", config::blazeId)                         // userId
         .endStruct();
 
     client->setConnectionState(blaze::ConnectionState::POST_AUTH);
@@ -252,23 +253,23 @@ namespace {
 
 void encodeExtendedData(blaze::TdfBuilder& b) {
     b.beginStruct("DATA")
-         .string("BPS", "bio-sjc")
-         .string("CTY", "US")
-         .integer("HWFG", 0)
-         .string("ISP", "")
-         .list("PSLM", blaze::TdfType::Integer, {})
-         .integerMap("PSM", {{"bio-sjc", 0}})
-         .beginStruct("QDAT")
-             .uint32("BWHR", 0)
-             .uint32("DBPS", 0)
-             .uint32("NAHR", 0)
-             .uint32("NATT", 0)
-             .uint32("UBPS", 0)
+         .string("BPS", "bio-sjc")                                      // bestPingSiteAlias
+         .string("CTY", "US")                                          // country
+         .integer("HWFG", 0)                                            // hardwareFlags
+         .string("ISP", "")                                            // ISP name
+         .list("PSLM", blaze::TdfType::Integer, {})                     // latencyList
+         .integerMap("PSM", {{"bio-sjc", 0}})                           // pingServerLatencyMap
+         .beginStruct("QDAT")                                           // qosData (NetworkQosData)
+             .uint32("BWHR", 0)                                         // bandwidthErrorCode
+             .uint32("DBPS", 0)                                         // downstreamBitsPerSecond
+             .uint32("NAHR", 0)                                         // natErrorCode
+             .uint32("NATT", 0)                                         // natType
+             .uint32("UBPS", 0)                                         // upstreamBitsPerSecond
          .endStruct()
-         .string("TZ", "America/New_York")
-         .uint64("UATT", 0)
-         .list("ULST", blaze::TdfType::ObjectType, {})
-         .boolean("XPLT", true)
+         .string("TZ", "America/New_York")                              // timeZone
+         .uint64("UATT", 0)                                             // userInfoAttribute
+         .list("ULST", blaze::TdfType::ObjectType, {})                  // blazeObjectIdList
+         .boolean("XPLT", true)                                         // crossplay flag
      .endStruct();
 }
 
@@ -283,19 +284,19 @@ void Util::pushUserAddedNotification(std::shared_ptr<network::ClientConnection> 
     encodeExtendedData(builder);
     builder
         .beginStruct("USER")
-            .integer("AID", 0)
+            .integer("AID", 0)                                          // accountId
             .beginStruct("AIDS")
                 .integer("PLAT", 4)
             .endStruct()
-            .integer("ALOC", 1701729619)
+            .integer("ALOC", 1701729619)                               // accountLocale
             .integer("CNTY", 0)
-            .integer("EXID", 0)
-            .integer("ID",   userId)
+            .integer("EXID", 0)                                         // externalId
+            .integer("ID",   userId)                                    // blazeId
             .integer("ISPP", 1)
-            .string("NAME", personaName)
-            .string("NASP", "cem_ea_id")
-            .integer("ORIG", 0)
-            .integer("PIDI", 0)
+            .string("NAME", personaName)                                // name
+            .string("NASP", "cem_ea_id")                               // personaNamespace
+            .integer("ORIG", 0)                                        // originPersonaId
+            .integer("PIDI", 0)                                        // pidId
         .endStruct();
 
     auto notif = std::make_unique<blaze::Packet>(
@@ -315,8 +316,8 @@ void Util::pushUserSessionExtendedDataUpdate(std::shared_ptr<network::ClientConn
     blaze::TdfBuilder builder;
     encodeExtendedData(builder);
     builder
-        .boolean("SUBS", true)
-        .integer("USID", static_cast<int64_t>(userId));
+        .boolean("SUBS", true)                                          // subscribed
+        .integer("USID", static_cast<int64_t>(userId));               // userId
 
     auto notif = std::make_unique<blaze::Packet>(
         blaze::ComponentId::UserSessions,
@@ -328,8 +329,6 @@ void Util::pushUserSessionExtendedDataUpdate(std::shared_ptr<network::ClientConn
     client->sendPacket(std::move(notif));
     LOG_INFO("[util] pushed UserSessionExtendedDataUpdate notif (uid={})", userId);
 }
-
-// Serves different server/game configs
 
 std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
     const blaze::Packet& request,
@@ -367,7 +366,7 @@ std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
     } else if (section == "EDITORIAL") {
 
         builder.stringMap("CONF", {
-            {"url", "https://editorial.gos.ea.com/PlantsVsZombies/GW2/config/pc/game.xml"},
+            {"url", "https://localhost:42220/PlantsVsZombies/GW2/config/pc/game.xml"},
         });
     } else if (section == "SPOTLIGHT") {
         builder.stringMap("CONF", {
@@ -425,28 +424,9 @@ std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
             {"packExternalPurchaseKillSwitch", "false"},
         });
     } else if (section == "PVZ_PLAYLISTS") {
-
-        builder
-        .integer("LANG", 0)
-        .list("LSID", blaze::TdfType::String, {
-            "PL_01",
-            "ID_M_PLAYLIST_01_DESCRIPTION",
-            "PL_02",
-            "ID_M_PLAYLIST_06_DESCRIPTION",
-            "PL_03",
-            "ID_M_PLAYLIST_TURFTAKEOVER_DESC",
-            "PL_04",
-            "ID_M_PLAYLIST_03_DESCRIPTION",
-            "PL_05",
-            "ID_M_PLAYLIST_GB_DESC",
-            "PL_06",
-            "ID_M_PLAYLIST_DOM_DESC",
-            "PL_07",
-            "ID_M_VAN_CONFIRMED_DESC"
-        });
+        builder.stringMap("CONF", playlistsConfig());
     }
     else {
-
         builder.stringMap("CONF", {});
     }
 
@@ -462,7 +442,7 @@ std::unique_ptr<blaze::Packet> Util::handleLocalizeStrings(
     auto tdf = request.getPayloadAsTdf();
     const auto& table = localizationTable();
 
-    // SMAP: each requested string id -> localized text (fallback to the id itself).
+    // SMAP: each requested string id -> localized text
     std::map<std::string, std::string> smap;
     size_t resolved = 0;
     auto it = tdf.find("LSID");

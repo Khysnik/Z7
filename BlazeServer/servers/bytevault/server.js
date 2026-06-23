@@ -1,4 +1,3 @@
-//bytevault server, handles player save data
 import { log } from "../../utils/log.js";
 import { serverDir } from "../../utils/appdir.js";
 import express from "express"
@@ -87,7 +86,7 @@ app.put("/1.0/contexts/plantsvszombies-gw2-pc/categories/PVZ/records/PlayerProfi
                 if (!(key in current)) {
                     current[key] = {};
                 }
-
+                
                 current = current[key];
             }
 

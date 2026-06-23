@@ -74,27 +74,9 @@ std::unique_ptr<blaze::Packet> GameReportingComponent::handlePacket(
         if (!stats.empty()) {
             data::PlayerProfile::instance().applyGameReport(stats);
 
-            // Coins earned this game (c___ccz_g) go to the spendable Coinz balance.
-            auto coins = stats.find("c___ccz_g");
-            if (coins != stats.end() && coins->second != 0.0) {
-                int64_t delta = static_cast<int64_t>(coins->second);
-                int64_t balance = data::addInventoryItem("Coinz", delta);
-                data::saveInventory();
-                LOG_INFO("[GameReporting] +{} Coinz -> {}", delta, balance);
-
-                // Notify the client of the inventory change (Inventory Notif0x000B).
-                auto notif = std::make_unique<blaze::Packet>(
-                    static_cast<blaze::ComponentId>(0x0803), 0x000B,
-                    blaze::MessageType::Notification, 0);
-                notif->setPayload(blaze::TdfBuilder()
-                    .integer("FFCB", balance)
-                    .integerMap("ILST", {})
-                    .integer("UID", config::blazeId)
-                    .build());
-                client->sendPacket(std::move(notif));
-            }
+            // NOTE: do NOT grant coins here. will result in doubled coins
         }
-        return request.createReply();  // empty reply (matches retail Cmd0x0002Response)
+        return request.createReply();  // empty reply
     }
 
     LOG_WARN("[GameReporting] Unhandled command: 0x{:04X}", command);

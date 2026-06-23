@@ -60,7 +60,7 @@ std::unique_ptr<blaze::Packet> Authentication::handleLogin(
 
     blaze::TdfBuilder builder;
     builder
-        .integer("ANON", 0)
+        .integer("ANON", 0) // isAnonymous
         .beginStruct("SESS")
             .integer("1CON", 0)
             .integer("BUID", config::blazeId)

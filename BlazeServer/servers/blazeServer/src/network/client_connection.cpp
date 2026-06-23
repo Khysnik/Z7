@@ -75,19 +75,21 @@ void ClientConnection::sendPacket(const blaze::Packet& packet) {
         bool isNotif = (msgType == blaze::MessageType::Notification);
         std::string name = blaze::blazePacketName(
             static_cast<uint16_t>(packet.getComponent()), packet.getCommand(), msgType);
-        auto tdf = packet.getPayloadAsTdf();
         std::string body;
-        if (!tdf.empty()) {
-            body = "\n" + blaze::tdfToBlaze(tdf);
-
-            // Truncate very large payloads to avoid spam
-            if (body.size() > 2000) {
-                body.resize(2000);
-                body += "\n... (truncated)";
+        try {
+            auto tdf = packet.getPayloadAsTdf();
+            if (!tdf.empty()) {
+                body = "\n" + blaze::tdfToBlaze(tdf);
+                if (body.size() > 2000) {
+                    body.resize(2000);
+                    body += "\n... (truncated)";
+                }
             }
+        } catch (const std::exception& e) {
+            body = std::string(" <undecodable payload: ") + e.what() + ">";
         }
-        //LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
-        LOG_INFO("[{}] << {}", isNotif ? "notif" : "reply", name);
+        LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
+        //LOG_INFO("[{}] << {}", isNotif ? "notif" : "reply", name);
     }
     
     auto self = shared_from_this();
@@ -255,20 +257,24 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     auto packet = blaze::Packet::parse(fullPacket);
     if (packet) {
         std::string name = blaze::blazePacketName(static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), blaze::MessageType::Message);
-        auto tdf = packet->getPayloadAsTdf();
+        // Decoding the payload is only for the log line; some requests (e.g.
+        // startMatchmakingScenario) carry TDF shapes our decoder can't fully parse,
+        // which would throw out of this asio callback and abort the server. Never let
+        // a logging decode kill the connection.
         std::string body;
-
-        if (!tdf.empty()) {
-            body = "\n" + blaze::tdfToBlaze(tdf);
-
-            // Truncate very large payloads to avoid spam
-            if (body.size() > 2000) {
-                body.resize(2000);
-                body += "\n... (truncated)";
+        try {
+            auto tdf = packet->getPayloadAsTdf();
+            if (!tdf.empty()) {
+                body = "\n" + blaze::tdfToBlaze(tdf);
+                if (body.size() > 2000) {
+                    body.resize(2000);
+                    body += "\n... (truncated)";
+                }
             }
+        } catch (const std::exception& e) {
+            body = std::string(" <undecodable payload: ") + e.what() + ">";
         }
-        //LOG_INFO("[recv] >> {}{}", name, body);
-        LOG_INFO("[recv] >> {}", name);
+        LOG_INFO("[recv] >> {}{}", name, body);
         if (m_packetHandler) {
             m_packetHandler(shared_from_this(), std::move(packet));
         }

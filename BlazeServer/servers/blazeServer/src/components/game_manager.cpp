@@ -175,7 +175,7 @@ std::unique_ptr<blaze::Packet> GameManager::handlePacket(
         
         case blaze::GameManagerCommand::startMatchmaking:
             return handleStartMatchmaking(request, client);
-        
+
         case blaze::GameManagerCommand::cancelMatchmaking:
             return handleCancelMatchmaking(request, client);
 
