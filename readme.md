@@ -3,7 +3,7 @@
   <h1 style="font-size: 2.5rem; margin-top: 0.5rem;">Z7 Project</h1>
 </div>
 
-Z7 is an in-development Blaze server emulator for Plants vs Zombies: Garden Warfare 2. It is made up of 5 individual servers:
+Z7 is an in-dev Blaze server emulator for Plants vs Zombies: Garden Warfare 2 which allows for offline play of the story mode with local save files. It is made up of 5 individual servers:
 
 - Blaze server - The core game server that handles authentication, loading save data and configs, and matchmaking.
 - QoS server - Used to measure your ping and connection speeds to different datacenter locations to find the best one
@@ -11,22 +11,15 @@ Z7 is an in-development Blaze server emulator for Plants vs Zombies: Garden Warf
 - Editorial server - Serves static assets and configs
 - Redirector server - The initial connection which connects your game to an active Blaze server
 
-All servers except the Blaze server are made in NodeJS as it is a really familiar and simple language to me. The Blaze server on the other hand will be made in C++ as it needs to be a bit more performant than the others.
 
-### Blaze server
-Successfully loads to the backyard with player save-data. Save synchronization, save updating, packs, and news are working. Matchmaking, events, etc are all TODO.
+## Installation
 
-### QoS server
-The HTTP side of this is complete, it just requires the UDP ping server to be built. The Blaze server currently just uses the EA servers
+Before running the emulator, you must add the following entry to your hosts file so the game uses the emulator instead of the real EA servers. Run notepad as administrator and open C:\Windows\System32\drivers\etc\hosts and add the following line to the bottom of the file:
 
-### Bytevault server
-Complete.
-
-### Editorial server
-Complete.
-
-### Redirector server
-Complete.
+```
+127.0.0.1 winter15.gosredirector.ea.com
+```
+Download and extract the release zip file. All you need to do to run the emulator is run launch.bat and enter your GW2 install folder. It will automatically patch the game and start the game with the private server. After the first launch setup, launch.bat will used the saved paths and start everything automatically
 
 
 ## Contact me
