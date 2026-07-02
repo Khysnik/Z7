@@ -12,7 +12,7 @@ namespace {
     constexpr int64_t kGpvh   = 5177781531LL;
     constexpr int64_t kSeed   = 1142158229LL;
     constexpr int64_t kTid    = 131006LL;
-    constexpr int64_t kCtim   = 3557264724342786LL;  // game create time (2x-unix microseconds)
+    constexpr int64_t kCtim   = 3557264724342786LL;  // game create time
     constexpr int64_t kPtime  = 3557264724343085LL;  // player join time
 }
 

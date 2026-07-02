@@ -23,9 +23,6 @@ private:
         std::shared_ptr<ClientConnection> client
     );
 
-    // 0x04: getStoreItemList -- the in-game coin-pack store catalog. The hub-load
-    // chain calls this right before getBlackMarketData; an empty/unhandled reply
-    // makes the client disable the shop subsystem (Rux stays closed/unqueried).
     std::unique_ptr<blaze::Packet> handleGetStoreItemList(
         const blaze::Packet& request,
         std::shared_ptr<ClientConnection> client

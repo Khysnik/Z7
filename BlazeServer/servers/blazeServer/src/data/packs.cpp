@@ -1,5 +1,6 @@
 #include "data/packs.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -16,18 +17,7 @@ const std::vector<PackTemplate>& load() {
     if (loaded) return packs;
     loaded = true;
 
-    std::ifstream f("data/packs.json", std::ios::binary);
-    if (!f) { 
-        LOG_WARN("[Packs] data/packs.json missing; pack catalog empty"); 
-        return packs; 
-    }
-    nlohmann::json j;
-    try { 
-        j = nlohmann::json::parse(f); 
-    } catch (const std::exception& e) { 
-        LOG_ERROR("[Packs] data/packs.json parse error: {}", e.what()); 
-        return packs; 
-    }
+    const nlohmann::json& j = utils::dataSection("packs");
 
     for (const auto& e : j.value("packs", nlohmann::json::array())) {
         PackTemplate p;

@@ -1,5 +1,6 @@
 #include "data/inventory.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -38,20 +39,7 @@ void loadInventory(const std::string& path) {
     stor.path = path;
     stor.items.clear(); stor.index.clear(); stor.unlocks.clear(); stor.unlockSet.clear();
 
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { 
-        LOG_WARN("[Inventory] {} missing; inventory empty", path); 
-        return; 
-    }
-    nlohmann::json json;
-
-    // Validate and parse the json
-    try { 
-        json = nlohmann::json::parse(f); 
-    } catch (const std::exception& e) { 
-        LOG_ERROR("[Inventory] {} parse error: {}", path, e.what()); 
-        return; 
-    }
+    nlohmann::json json = utils::loadFile(path);
 
     // Load items
     for (const auto& item : json.value("items", nlohmann::json::array())) {
@@ -81,10 +69,7 @@ bool saveInventory() {
     j["items"]   = items;
     j["unlocks"] = stor.unlocks;
 
-    std::ofstream f(stor.path, std::ios::binary | std::ios::trunc);
-    if (!f) { LOG_ERROR("[Inventory] cannot write {}", stor.path); return false; }
-    f << j.dump(2);
-    return true;
+    return utils::saveFile(stor.path, j);
 }
 
 const std::vector<InventoryItem>& getInventoryItems() { 

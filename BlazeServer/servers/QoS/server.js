@@ -37,9 +37,9 @@ function buildProbeReply(req, rinfo) {
     const reply = Buffer.alloc(30);
     req.copy(reply, 0, 0, 20);
     const oct = ipv4Octets(rinfo.address);
-    reply[20] = oct[0]; 
-    reply[21] = oct[1]; 
-    reply[22] = oct[2]; 
+    reply[20] = oct[0];
+    reply[21] = oct[1];
+    reply[22] = oct[2];
     reply[23] = oct[3];
     reply.writeUInt16BE(rinfo.port & 0xFFFF, 24);
     return reply;

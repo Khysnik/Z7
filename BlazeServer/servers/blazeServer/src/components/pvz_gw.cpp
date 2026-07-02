@@ -8,6 +8,9 @@
 #include "data/loot.hpp"
 #include "config.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
+#include "utils/http.hpp"
+#include "utils/editorial.hpp"
 #include "utils/server_time.hpp"
 #include <nlohmann/json.hpp>
 #include <algorithm>
@@ -40,23 +43,23 @@ std::string getStrField(const blaze::TdfStruct& tdf, const std::string& tag) {
     return std::get<blaze::TdfString>(it->second->value);
 }
 
-// Load + cache a JSON content file from data/* (e.g. blackmarket.json, community.json).
 const json& content(const char* file) {
-    static std::map<std::string, json> cache;
-    auto it = cache.find(file);
-    if (it != cache.end()) return it->second;
-    json j = json::object();
-    std::ifstream f(std::string("data/") + file, std::ios::binary);
-    if (f) {
-        try { j = json::parse(f); }
-        catch (const std::exception& e) { LOG_ERROR("[PvzGw] {} parse error: {}", file, e.what()); }
-    } else {
-        LOG_WARN("[PvzGw] data/{} missing", file);
-    }
-    return cache.emplace(file, std::move(j)).first->second;
+    std::string key = file;
+    const auto dot = key.rfind(".json");
+    if (dot != std::string::npos) key.erase(dot);
+    return utils::dataSection(key);
 }
 
-// Grant an item key: customizations/characters are unlocks; everything else is a consumable/currency quantity.
+json fetchLive(const std::string& path, const char* fallbackFile) {
+    try {
+        return utils::httpGet(utils::kEditorialBase + path);
+    } catch (const std::exception& e) {
+        LOG_WARN("[PvzGw] editorial {} unavailable ({}); using {}",
+                 path, e.what(), fallbackFile ? fallbackFile : "defaults");
+        return fallbackFile ? content(fallbackFile) : json::object();
+    }
+}
+
 void grantItem(const std::string& key, int64_t qty = 1) {
     const std::string& k = key;
     if (k.rfind("Cus",0)==0 || k.rfind("stk",0)==0 || k.rfind("aschar",0)==0 || k.rfind("socha",0)==0 || k.rfind("ab",0)==0)
@@ -65,7 +68,6 @@ void grantItem(const std::string& key, int64_t qty = 1) {
         data::addInventoryItem(k, qty);
 }
 
-// Push the live inventory notification (coins + items) so the HUD/booth update without a relog. FFCB = new balance, ILST = the delta (non-empty or the client skips it).
 void pushInventoryNotif(std::shared_ptr<network::ClientConnection> client, const std::map<std::string,int64_t>& ilst) {
     auto notif = std::make_unique<blaze::Packet>(static_cast<blaze::ComponentId>(0x0803), 0x000B, blaze::MessageType::Notification, 0);
     notif->setPayload(blaze::TdfBuilder()
@@ -76,10 +78,9 @@ void pushInventoryNotif(std::shared_ptr<network::ClientConnection> client, const
     client->sendPacket(std::move(notif));
 }
 
-// Rux's Black Market, loaded from data/blackmarket.json
 blaze::TdfStruct buildBlackMarketData(int64_t blazeId, bool includeSlots) {
     (void)blazeId;
-    const json& bm = content("blackmarket.json");
+    const json bm = fetchLive("/gw2/live/blackmarket", "blackmarket.json");
     std::vector<std::string> have, none, still;
     for (const auto& s : bm.value("haveItemsDialog", json::array()))
         have.push_back(s.get<std::string>());
@@ -90,13 +91,17 @@ blaze::TdfStruct buildBlackMarketData(int64_t blazeId, bool includeSlots) {
     if (still.empty())
         still.push_back("Having trouble making a decision?");
 
-    // SCTU = unix time the market state next changes (rotation expiry)
-    const int64_t bmBase   = bm.value("rotationBaseUnix",    (int64_t)1782126000); // 2026-06-22 11:00 UTC
-    const int64_t bmPeriod = bm.value("rotationPeriodSecs",  (int64_t)1209600);    // 14 days
-    int64_t now = blazeServerNow();
-    int64_t sctu = bmBase + ((now - bmBase) / bmPeriod) * bmPeriod;
-    while (sctu <= now)
-        sctu += bmPeriod;
+    int64_t sctu;
+    if (bm.contains("stateChangeTimeUnix")) {
+        sctu = bm.value("stateChangeTimeUnix", (int64_t)0);
+    } else {
+        const int64_t bmBase   = bm.value("rotationBaseUnix",    (int64_t)1782126000); // 2026-06-22 11:00 UTC
+        const int64_t bmPeriod = bm.value("rotationPeriodSecs",  (int64_t)1209600);    // 14 days
+        const int64_t now = blazeServerNow();
+        sctu = bmBase + ((now - bmBase) / bmPeriod) * bmPeriod;
+        while (sctu <= now)
+            sctu += bmPeriod;
+    }
 
     // DATA = BlackMarketData (Blaze::PvzGw::BlackMarketData)
     blaze::TdfBuilder b;
@@ -125,7 +130,6 @@ blaze::TdfStruct buildBlackMarketData(int64_t blazeId, bool includeSlots) {
     return b.build();
 }
 
-// Add one MSLT entry (PVZ_NEWS message: BFN promo, Rux black-market, etc.)
 void addUserMessage(blaze::TdfBuilder& b, int64_t prio, int64_t mgid, int64_t time, const std::map<std::string, std::string>& attr) {
     b.beginStruct()
         .integer("IFMG", 0)                                             // isForcedMessage
@@ -216,11 +220,8 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(const blaze::Packet&
     std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetUserMessages(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getUserMessages from {}", client->getRemoteAddress());
 
-    // GetUserMessagesResponse: MSLT = messages (list of PVZGWServerMessage).
     blaze::TdfBuilder b;
     b.beginList("MSLT");                                                 // messages
-
-    // ATTR map field ids: 65280=title, 65282=body, 777777=image url, 777780/777781/777782=image meta.
 
     // [0] PvZ: Battle for Neighborville promotion (inbox message)
     addUserMessage(b, 7000, 102793108, 1693150944LL, {
@@ -326,12 +327,21 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetStoreItemList(const blaz
 std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetDailyQuests(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getDailyQuests from {}", client->getRemoteAddress());
 
+    // Quest set + rotation window come from the editorial server (synchronized).
+    const json dq = fetchLive("/gw2/live/dailyquests", nullptr);
+    const int64_t now = blazeServerNow();
+    std::vector<std::string> quests;
+    for (const auto& q : dq.value("quests", json::array()))
+        quests.push_back(q.get<std::string>());
+    const int64_t actAt = dq.value("activationUnix", now);
+    const int64_t expAt = dq.value("expiryUnix", now + 3600);
+
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .int64("DQAT", blazeServerNow())                                           // activationTime (Blaze time = unix seconds)
-        .int64("DQET", toBlazeTime(std::time(nullptr) + 24 * 60 * 60))  // expiryTime
-        .list("DQID", blaze::TdfType::String, {})                              // dailyQuests
-        .int64("DQTE", 24 * 60 * 60)                                               // timeToExpiry
+        .int64("DQAT", actAt)                                     // activationTime (unix seconds)
+        .int64("DQET", expAt)                                     // expiryTime
+        .list("DQID", blaze::TdfType::String, quests)            // dailyQuests
+        .int64("DQTE", expAt - now)                               // timeToExpiry (seconds until refill)
         .build());
     return reply;
 }
@@ -468,68 +478,99 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityAchievements(
 ) {
     LOG_INFO("[PvzGw] getCommunityAchievements from {}", client->getRemoteAddress());
 
-    int64_t now = blazeServerNow();
-    (void)now;
+    // The 3-tier community challenge (progress + timers) comes from the editorial
+    // server so it advances in sync across servers. Defaults keep the pre-existing
+    // static challenge if editorial is unavailable.
+    const json c = fetchLive("/gw2/live/communitychallenge?user=" + std::to_string(config::blazeId), nullptr);
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
         .beginStruct("ACDA")
-            .string ("AHID", "z7cc1")                       // achievementId: unique challenge id
-            .string ("NAME", "Elemental Clash Community Challenge") // name: title shown in the UI
-            .string ("DESC", "Select your element and get involved in the Elemental Clash Community Challenge! Every vanquish with Toxic, Fire, Ice, and Electric types count. Win, and make off with armfuls of rewards!") // desc: longer description
-            .string ("IMG",  "https://i.ytimg.com/vi/EL_XvNLEBAw/sddefault.jpg") // image url
-            .string ("PEHD", "Your Elemental Vanquishes")   // personalHeader: header above the personal bar
-            .string ("REHD", "Community Goals:")            // rewardHeader: header above the rewards list
-            .integer("CHAC", 1)                                // challengeActive: 1 = challenge is running
-            .integer("COAC", 1)                                // contributionActive: 1 = player can contribute now
-            .integer("PTS",  200699)                           // communityProgress: current shared score
-            .integer("BRTD", 15000000)                         // bronzeThreshold: score needed for bronze
-            .integer("SLTD", 30000000)                         // silverThreshold: score needed for silver
-            .integer("GDTD", 50000000)                         // goldThreshold:  score needed for gold
-            .string ("BHOW", "Wondrous Pack of Greatness")  // bronzeReward
-            .string ("SHOW", "Infinity Pack")               // silverReward
-            .string ("GHOW", "Legendary Item")              // goldReward
-            .integer("BRCL", 0)                                // bronzeRewardCollected
-            .integer("SLCL", 0)                                // silverRewardCollected
-            .integer("GOCL", 0)                                // goldRewardCollected
-            .integer("URTD", 1000)                             // userThreshold: this player's personal goal
-            .integer("USPS", 127)                              // userProgress:  this player's progress so far
-            .integer("SCFS", 86400)                            // secondsFromStart: how long the event has run
-            .integer("NEST", 0)                                // secondsToNextEvent: countdown to next event
-            .integer("STCE", 7 * 86400)                        // secondsToCollectionExpiryTime: time left to collect
-            .integer("STRE", 7 * 86400)                        // secondsToRewardExpiryTime: time left to claim rewards
-            .integer("RRSC", 60)                               // refreshRateSeconds: how often the client re-polls
-            .integer("PCSC", 30)                               // proximityCooldownSeconds: contribution cooldown
+            .string ("AHID", c.value("achievementId", std::string("z7cc1")))       // achievementId
+            .string ("NAME", c.value("name", std::string("Elemental Clash Community Challenge")))
+            .string ("DESC", c.value("desc", std::string("Select your element and get involved!")))
+            .string ("IMG",  c.value("image", std::string("")))                    // image url
+            .string ("PEHD", c.value("personalHeader", std::string("Your Vanquishes")))
+            .string ("REHD", c.value("rewardHeader", std::string("Community Goals:")))
+            .integer("CHAC", c.value("challengeActive",    (int64_t)1))            // challengeActive
+            .integer("COAC", c.value("contributionActive", (int64_t)1))            // contributionActive
+            .integer("PTS",  c.value("communityProgress",  (int64_t)0))            // communityProgress
+            .integer("BRTD", c.value("bronzeThreshold", (int64_t)15000000))        // bronzeThreshold
+            .integer("SLTD", c.value("silverThreshold", (int64_t)30000000))        // silverThreshold
+            .integer("GDTD", c.value("goldThreshold",   (int64_t)50000000))        // goldThreshold
+            .string ("BHOW", c.value("bronzeReward", std::string("Wondrous Pack of Greatness")))
+            .string ("SHOW", c.value("silverReward", std::string("Infinity Pack")))
+            .string ("GHOW", c.value("goldReward",   std::string("Legendary Item")))
+            .integer("BRCL", c.value("bronzeCollected", (int64_t)0))               // bronzeRewardCollected
+            .integer("SLCL", c.value("silverCollected", (int64_t)0))               // silverRewardCollected
+            .integer("GOCL", c.value("goldCollected",   (int64_t)0))               // goldRewardCollected
+            .integer("URTD", c.value("userThreshold", (int64_t)1000))              // userThreshold
+            .integer("USPS", c.value("userProgress",  (int64_t)0))                 // userProgress
+            .integer("SCFS", c.value("secondsFromStart",         (int64_t)0))      // secondsFromStart
+            .integer("NEST", c.value("secondsToNextEvent",       (int64_t)0))      // secondsToNextEvent
+            .integer("STCE", c.value("secondsToCollectionExpiry",(int64_t)(7*86400))) // secondsToCollectionExpiry
+            .integer("STRE", c.value("secondsToRewardExpiry",    (int64_t)(7*86400))) // secondsToRewardExpiry
+            .integer("RRSC", c.value("refreshRateSeconds",       (int64_t)60))     // refreshRateSeconds
+            .integer("PCSC", c.value("proximityCooldownSeconds", (int64_t)30))     // proximityCooldownSeconds
         .endStruct()
         .build());
     return reply;
 }
 
 std::unique_ptr<blaze::Packet> PvzGwComponent::handleClaimCommunityEventReward(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
-    LOG_INFO("[PvzGw] claimCommunityEventReward from {}", client->getRemoteAddress());
+    const int64_t tier = getIntField(request.getPayloadAsTdf(), "TIER", 0);
+    LOG_INFO("[PvzGw] claimCommunityEventReward from {} (TIER={})", client->getRemoteAddress(), tier);
 
-    // roll a pack + inventory update. TODO: proper loot tables
+    // Roll a normal reward chest (same pack for all three tiers for now).
     const json& ev = content("community.json");
-    std::string pk = ev.value("eventReward", std::string(""));
-    std::map<std::string,int64_t> ilst;
-    if (!pk.empty()) {
-        auto loot = data::rollPack(pk);
-        if (loot.valid) {
-            for (const auto& [ais, qty] : loot.consumables) {
-                data::addInventoryItem(ais, qty);
-                ilst[ais]+=qty;
-            }
-            for (const auto& key : loot.unlocks) {
-                data::addInventoryUnlock(key);
-                ilst[key]=1;
-            }
-            data::saveInventory();
-        }
+    const std::string pk = ev.value("eventReward", std::string("dynpk272"));
+    auto loot = data::rollPack(pk);
+
+    std::map<std::string, int64_t> ilst;
+    if (loot.valid) {
+        for (const auto& [ais, qty] : loot.consumables) { data::addInventoryItem(ais, qty); ilst[ais] += qty; }
+        for (const auto& key : loot.unlocks)            { data::addInventoryUnlock(key);   ilst[key] = 1;    }
+        data::saveInventory();
+        LOG_INFO("[PvzGw] event reward '{}' (tier {}): {} consumables, {} unlocks",
+                 pk, tier, loot.consumables.size(), loot.unlocks.size());
     }
     if (!ilst.empty())
         pushInventoryNotif(client, ilst);
 
-    return request.createReply();
+    // Reveal response = a standard chest roll (ORSP.PACK.ITLI), the same shape the
+    // client uses for a pack open, so the reward chest animates and shows its cards.
+    const int64_t balance = data::getInventoryQuantity("Coinz");
+    std::map<std::string, int64_t> cnsm(loot.consumables.begin(), loot.consumables.end());
+    static int64_t s_evInstance = 1;
+    const int64_t now = blazeServerNow() * 1000000LL;
+
+    auto reply = request.createReply();
+    reply->setPayload(blaze::TdfBuilder()
+        .integer("FFCB", balance)                       // finalCoinBalance
+        .string ("FFCT", "Coinz")                       // finalCoinType
+        .beginStruct("ORSP")
+            .integerMap("CNSM", cnsm)                   // consumables granted
+            .beginStruct("PACK")
+                .string ("ADDT", "")
+                .integer("AUDL", 65)
+                .integer("COST", 0)                     // free reward
+                .string ("DESC", "")
+                .string ("GKEY", "")
+                .string ("IMGN", "")
+                .list   ("ITLI", blaze::TdfType::String, loot.itli)   // rolled cards (reveal order)
+                .integer("PID", 647607740 + s_evInstance++)
+                .string ("PKEY", pk)
+                .string ("PUDS", "")
+                .integer("SCAT", 2)
+                .integer("TGEN", now)
+                .string ("TITL", "")
+                .integer("TVAL", now)
+                .list   ("TYPE", blaze::TdfType::String, { "CardPackType_Regular" })
+                .integer("UID", config::blazeId)
+            .endStruct()
+        .endStruct()
+        .build());
+    return reply;
 }
 
 std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetBlackMarketData(const blaze::Packet& request,std::shared_ptr<network::ClientConnection> client) {
@@ -548,35 +589,92 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(con
     std::string slid = getStrField(requestTdf, "SLID");
     LOG_INFO("[PvzGw] purchaseBlackMarketItem from {} (SLID={})", client->getRemoteAddress(), slid);
 
-    // Find the slot in blackmarket.json.
-    const json& bm = content("blackmarket.json");
-    const json* slot = nullptr;
-    for (const auto& s : bm.value("slots", json::array()))
+    // Find the slot in the current (editorial) rotation. Copy its fields out
+    // inside the loop: bm.value("slots", ...) returns a temporary array, so a
+    // pointer into an element would dangle once the range-for statement ends.
+    const json bm = fetchLive("/gw2/live/blackmarket", "blackmarket.json");
+    int64_t price = 0;
+    std::string itid, kind;
+    bool found = false;
+    for (const auto& s : bm.value("slots", json::array())) {
         if (s.value("slid", std::string("")) == slid) {
-            slot = &s;
+            price = s.value("price", (int64_t)0);
+            itid  = s.value("itid", std::string(""));
+            kind  = s.value("kind", std::string(""));
+            found = true;
             break;
         }
-    if (!slot) {
+    }
+    if (!found) {
         return request.createReply();  // unknown slot -> ack, no grant
     }
-
-    int64_t price = slot->value("price", (int64_t)0);
-    std::string itid = slot->value("itid", std::string(""));
     if (data::getInventoryQuantity("Coinz") < price) {
         LOG_WARN("[PvzGw] black market: insufficient funds for {} ({} coins)", itid, price);
         return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
     }
 
-    int64_t balance = data::addInventoryItem("Coinz", -price);
-    grantItem(itid);
-    data::saveInventory();
-    LOG_INFO("[PvzGw] black market: bought {} for {} -> Coinz {}", itid, price, balance);
+    // Classify by the editorial-provided kind: only "consumable" is a stackable
+    // quantity item; cosmetics / abilities / stickers / costumes are permanent
+    // unlocks and must be saved to the unlock list (or they're lost on relog).
+    // Fall back to a key-prefix heuristic when kind is absent (static data).
+    const bool consumable = !kind.empty()
+        ? (kind == "consumable")
+        : !(itid.rfind("Cus",0)==0 || itid.rfind("stk",0)==0 || itid.rfind("aschar",0)==0
+            || itid.rfind("socha",0)==0 || itid.rfind("ab",0)==0 || itid.rfind("piab",0)==0
+            || itid.rfind("ziab",0)==0);
 
-    // HUD update
+    int64_t balance = data::addInventoryItem("Coinz", -price);
+    if (consumable) data::addInventoryItem(itid, 1);
+    else            data::addInventoryUnlock(itid);
+    data::saveInventory();
+    LOG_INFO("[PvzGw] black market: bought {} ({}) for {} -> Coinz {}",
+             itid, kind.empty() ? (consumable ? "consumable" : "unlock") : kind, price, balance);
+
+    // HUD update (new balance + granted item)
     pushInventoryNotif(client, { {itid, 1} });
 
+    // PurchaseBlackMarketItemResponse = OPRL (the buy is delivered as a 1-item
+    // pack open, list of Blaze::Packs::PurchaseAndOpenPackResponse) + SUCC (bool).
+    // The client reads OPRL[0].ORSP.PACK.ITLI to reveal the purchased item; a bare
+    // SUCC ack leaves the reveal screen hanging.
+    std::map<std::string, int64_t> cnsm;
+    if (consumable) cnsm[itid] = 1;   // consumables reveal via CNSM too
+
+    static int64_t s_bmInstance = 1;
+    const int64_t now = blazeServerNow() * 1000000LL;
+
+    blaze::TdfBuilder b;
+    b.beginList("OPRL")
+        .beginStruct()
+            .integer("FFCB", balance)                       // finalCoinBalance
+            .string("FFCT", "Coinz")                        // finalCoinType
+            .beginStruct("ORSP")
+                .integerMap("CNSM", cnsm)                   // consumables granted
+                .beginStruct("PACK")
+                    .string("ADDT", "")
+                    .integer("AUDL", 65)
+                    .integer("COST", price)
+                    .string("DESC", "")
+                    .string("GKEY", "")
+                    .string("IMGN", "")
+                    .list("ITLI", blaze::TdfType::String, { itid })   // items granted
+                    .integer("PID", 647607740 + s_bmInstance++)
+                    .string("PKEY", "z7blackmarket")
+                    .string("PUDS", "")
+                    .integer("SCAT", 2)
+                    .integer("TGEN", now)
+                    .string("TITL", "")
+                    .integer("TVAL", now)
+                    .list("TYPE", blaze::TdfType::String, { "CardPackType_Regular" })
+                    .integer("UID", config::blazeId)
+                .endStruct()
+            .endStruct()
+        .endStruct()
+    .endList()
+    .integer("SUCC", 1);                                    // success
+
     auto reply = request.createReply();
-    reply->setPayload(blaze::TdfBuilder().integer("SUCC", 1).build());  // success
+    reply->setPayload(b.build());
     return reply;
 }
 
@@ -591,13 +689,17 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetBlackMarketViewed(const 
 std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityPortalData(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getCommunityPortalData from {}", client->getRemoteAddress());
 
-    // Load community event config from community.json
-    const json& ev = content("community.json");
+    // Community event + window come from the editorial server (synchronized);
+    // falls back to static community.json offsets if it's unavailable.
+    const json ev = fetchLive("/gw2/live/communityevent", "community.json");
     bool feat = ev.value("featured", false);
     int64_t now = blazeServerNow();
-    int64_t st  = now + (int64_t)(ev.value("startOffsetDays", -1.0) * 86400.0);
-    int64_t et  = now + (int64_t)(ev.value("endOffsetDays",   14.0) * 86400.0);
-    int64_t gpe = now + (int64_t)(ev.value("grandPrizeOffsetDays", 14.0) * 86400.0);
+    int64_t st  = ev.contains("startUnix") ? ev.value("startUnix", (int64_t)0)
+                                           : now + (int64_t)(ev.value("startOffsetDays", -1.0) * 86400.0);
+    int64_t et  = ev.contains("endUnix")   ? ev.value("endUnix",   (int64_t)0)
+                                           : now + (int64_t)(ev.value("endOffsetDays",   14.0) * 86400.0);
+    int64_t gpe = ev.contains("grandPrizeEndUnix") ? ev.value("grandPrizeEndUnix", (int64_t)0)
+                                           : now + (int64_t)(ev.value("grandPrizeOffsetDays", 14.0) * 86400.0);
     int64_t flag = feat ? -1 : 65;   // crazyOption slots: -1 active, 65 idle
 
     auto reply = request.createReply();

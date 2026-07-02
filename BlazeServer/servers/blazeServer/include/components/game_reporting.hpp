@@ -8,9 +8,6 @@ namespace gw2::components {
 
 using network::ClientConnection;
 
-// GameReporting (component 0x001C). Handles SubmitGameReport (0x0002): the client
-// uploads per-game stats at the end of a game/mission; we apply them to the
-// persistent PlayerProfile (data/MPProfile.json).
 class GameReportingComponent : public blaze::Component {
 public:
     GameReportingComponent();

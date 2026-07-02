@@ -1,6 +1,7 @@
 #include "data/player_profile.hpp"
 #include "blaze/tdf.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -43,12 +44,8 @@ PlayerProfile& PlayerProfile::instance() {
 
 // Load the player profile from a json file
 bool PlayerProfile::load(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { LOG_WARN("[PlayerProfile] {} missing; progression will be empty", path); return false; }
-
-    ordered_json j;
-    try { j = ordered_json::parse(f); }
-    catch (const std::exception& e) { LOG_ERROR("[PlayerProfile] {} parse error: {}", path, e.what()); return false; }
+    ordered_json j = utils::loadFile<ordered_json>(path);
+    if (j.empty()) return false;   // missing / empty / parse error (already logged)
 
     m_path = path;
     m_stats.clear();
@@ -82,23 +79,11 @@ bool PlayerProfile::load(const std::string& path) {
 }
 
 // Load stat aggregation rules from json, setting the save mode for each stat (e.g. "Set", "Increment", "Low", "High")
-bool PlayerProfile::loadAggregation(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { 
-        LOG_WARN("[PlayerProfile] {} missing; merges use suffix heuristic", path); 
-        return false; 
-    }
-    nlohmann::json j;
-    try { 
-        j = nlohmann::json::parse(f); 
-    }
-    catch (const std::exception& e) { 
-        LOG_ERROR("[PlayerProfile] {} parse error: {}", path, e.what()); 
-        return false; 
-    }
+bool PlayerProfile::loadAggregation(const nlohmann::json& rules) {
+    if (rules.empty()) return false;
 
     m_aggregation.clear();
-    for (const auto& [k, v] : j.items()) m_aggregation[k] = v.get<std::string>();
+    for (const auto& [k, v] : rules.items()) m_aggregation[k] = v.get<std::string>();
     LOG_INFO("[PlayerProfile] loaded {} stat aggregation rules", m_aggregation.size());
     return true;
 }
@@ -120,13 +105,7 @@ bool PlayerProfile::save() const {
     for (const auto& [n, v] : m_stats) stats[n] = v;
     j["stats"] = stats;
 
-    std::ofstream f(m_path, std::ios::binary | std::ios::trunc);
-    if (!f) { 
-        LOG_ERROR("[PlayerProfile] cannot write {}", m_path); 
-        return false; 
-    }
-    f << j.dump(2);
-    return true;
+    return utils::saveFile(m_path, j);
 }
 
 blaze::TdfStruct PlayerProfile::buildStatsNotif() const {
@@ -200,6 +179,12 @@ void PlayerProfile::applyGameReport(const std::unordered_map<std::string, double
     }
     LOG_INFO("[PlayerProfile] applied game report: {} stats updated", changed);
     save();
+}
+
+double PlayerProfile::getStat(const std::string& name, double fallback) const {
+    auto it = m_index.find(name);
+    if (it == m_index.end()) return fallback;
+    return std::strtod(m_stats[it->second].second.c_str(), nullptr);
 }
 
 } // namespace gw2::data

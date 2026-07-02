@@ -228,6 +228,8 @@ set(SERVER_SOURCES
 
         src/utils/logger.cpp
         src/utils/config.cpp
+        src/utils/json.cpp
+        src/utils/http.cpp
 )
 
 set(SERVER_HEADERS
@@ -260,6 +262,9 @@ set(SERVER_HEADERS
 
         include/utils/logger.hpp
         include/utils/config.hpp
+        include/utils/json.hpp
+        include/utils/http.hpp
+        include/utils/editorial.hpp
 )
 
 add_executable(gw2-server ${SERVER_SOURCES} ${SERVER_HEADERS})

@@ -4,9 +4,14 @@
 #include "data/player_profile.hpp"
 #include "data/inventory.hpp"
 #include "utils/logger.hpp"
+#include "utils/http.hpp"
+#include "utils/editorial.hpp"
+
+#include <nlohmann/json.hpp>
 
 #include <cstring>
 #include <map>
+#include <regex>
 #include <unordered_map>
 #include <vector>
 
@@ -54,6 +59,42 @@ std::unordered_map<std::string, double> parseReportStats(const std::vector<uint8
     return out;
 }
 
+// Forward the vanquish deltas to editorial
+void postChallengeContribution(const std::unordered_map<std::string, double>& stats) {
+    static const std::regex reElement(R"(^c_Any(.+?)Character___kscx_g$)");
+    static const std::regex reVariant(R"(^c_([A-Za-z0-9]+)__kscx_g$)");
+    static const std::regex reChar   (R"(^c_([A-Za-z0-9]+)__ks_g$)");
+
+    nlohmann::json elements   = nlohmann::json::object();
+    nlohmann::json characters = nlohmann::json::object();
+    nlohmann::json variants   = nlohmann::json::object();
+    std::smatch m;
+    for (const auto& [key, val] : stats) {
+        if (val <= 0) continue;
+        if (std::regex_match(key, m, reElement))
+            elements[m[1].str()]   = elements.value(m[1].str(), 0.0) + val;
+        else if (std::regex_match(key, m, reVariant))
+            variants[m[1].str()]   = variants.value(m[1].str(), 0.0) + val;
+        else if (std::regex_match(key, m, reChar))
+            characters[m[1].str()] = characters.value(m[1].str(), 0.0) + val;
+    }
+    if (elements.empty() && characters.empty() && variants.empty()) return;
+
+    nlohmann::json payload = {
+        {"user", config::blazeId},
+        {"elements", elements},
+        {"characters", characters},
+        {"variants", variants},
+    };
+    try {
+        auto r = utils::httpPost(utils::kEditorialBase + std::string("/gw2/live/challenge/contribute"), payload);
+        LOG_INFO("[GameReporting] challenge contribute -> matched {}, community {}",
+                 r.value("matched", 0.0), r.value("community", 0.0));
+    } catch (const std::exception& e) {
+        LOG_WARN("[GameReporting] challenge contribute failed: {}", e.what());
+    }
+}
+
 }
 
 GameReportingComponent::GameReportingComponent()
@@ -73,6 +114,7 @@ std::unique_ptr<blaze::Packet> GameReportingComponent::handlePacket(
                  client->getRemoteAddress(), stats.size());
         if (!stats.empty()) {
             data::PlayerProfile::instance().applyGameReport(stats);
+            postChallengeContribution(stats);   // forward vanquish deltas to editorial
 
             // NOTE: do NOT grant coins here. will result in doubled coins
         }

@@ -14,6 +14,7 @@
 #include "data/player_profile.hpp"
 #include "data/inventory.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
 #ifdef _WIN32
 #include <winsock2.h>
 #else
@@ -68,7 +69,7 @@ void Server::setupComponents() {
     registry.registerComponent(std::make_shared<components::GameReportingComponent>());
 
     data::PlayerProfile::instance().load("data/MPProfile.json");
-    data::PlayerProfile::instance().loadAggregation("data/stat_aggregation.json");
+    data::PlayerProfile::instance().loadAggregation(utils::dataSection("stat_aggregation"));
 
     data::loadInventory("data/inventory.json");
 

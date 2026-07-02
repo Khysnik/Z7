@@ -1,6 +1,7 @@
 #include "data/loot.hpp"
 #include "data/inventory.hpp"
 #include "utils/logger.hpp"
+#include "utils/json.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -14,21 +15,6 @@ namespace gw2::data {
 namespace {
 
 using nlohmann::json;
-
-// Load a json data file
-json loadJson(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { 
-        LOG_WARN("[Loot] {} missing", path); 
-        return json::object(); 
-    }
-    try { 
-        return json::parse(f); 
-    } catch (const std::exception& e) { 
-        LOG_ERROR("[Loot] {} parse error: {}", path, e.what()); 
-        return json::object(); 
-    }
-}
 
 struct Consumable { std::string grants; int64_t qty; std::string rarity; std::string card; };
 struct Cosmetic   { std::string key; std::string rarity; };
@@ -69,7 +55,7 @@ Tables& tables() {
     if (t.loaded) return t;
     t.loaded = true;
 
-    json items = loadJson("data/items.json");
+    const json& items = utils::dataSection("items");
 
     // Load consumables
     for (const auto& e : items.value("consumables", json::array()))
@@ -86,7 +72,7 @@ Tables& tables() {
         t.stickers.push_back(std::move(st));
     }
 
-    t.packs = loadJson("data/pack_tables.json").value("packs", json::object());
+    t.packs = utils::dataSection("pack_tables").value("packs", json::object());
 
     LOG_INFO("[Loot] pools: {} consumables, {} cosmetics, {} sticker sets",
              t.consumables.size(), t.cosmetics.size(), t.stickers.size());

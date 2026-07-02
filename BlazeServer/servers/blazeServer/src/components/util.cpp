@@ -3,6 +3,7 @@
 #include "network/client_connection.hpp"
 #include "utils/logger.hpp"
 #include "utils/config.hpp"
+#include "utils/json.hpp"
 #include "utils/server_time.hpp"
 #include "config.hpp"
 
@@ -21,42 +22,21 @@ namespace {
 const std::unordered_map<std::string, std::string>& localizationTable() {
     static const std::unordered_map<std::string, std::string> table = [] {
         std::unordered_map<std::string, std::string> m;
-        std::ifstream f("data/localization.json", std::ios::binary);
-        if (!f) {
-            LOG_WARN("[util] data/localization.json missing; LocalizeStrings will echo ids");
-            return m;
-        }
-        try {
-            nlohmann::json j = nlohmann::json::parse(f);
-            for (const auto& [k, v] : j.items()) m.emplace(k, v.get<std::string>());
-        } catch (const std::exception& e) {
-            LOG_ERROR("[util] localization.json parse error: {}", e.what());
-        }
+        const nlohmann::json& j = utils::dataSection("localization");
+        for (const auto& [k, v] : j.items()) m.emplace(k, v.get<std::string>());
         LOG_INFO("[util] loaded {} localized strings", m.size());
         return m;
     }();
     return table;
 }
 
-// PVZ_PLAYLISTS fetchClientConfig CONF map (the multiplayer browser playlists)
 const std::map<std::string, std::string>& playlistsConfig() {
     static const std::map<std::string, std::string> cfg = [] {
         std::map<std::string, std::string> m;
-        std::ifstream f("data/playlists_config.json", std::ios::binary);
-        if (!f) {
-            LOG_WARN("[util] data/playlists_config.json missing; PVZ_PLAYLISTS will be empty");
-            return m;
-        }
-        try {
-            nlohmann::json j = nlohmann::json::parse(f);
-            // NB: iterate a reference into `j` -- calling .items() on the temporary
-            // returned by j.value(...) dangles and crashes.
-            if (j.contains("CONF") && j["CONF"].is_object()) {
-                for (const auto& [k, v] : j["CONF"].items())
-                    m.emplace(k, v.get<std::string>());
-            }
-        } catch (const std::exception& e) {
-            LOG_ERROR("[util] playlists_config.json parse error: {}", e.what());
+        const nlohmann::json& j = utils::dataSection("playlists_config");
+        if (j.contains("CONF") && j["CONF"].is_object()) {
+            for (const auto& [k, v] : j["CONF"].items())
+                m.emplace(k, v.get<std::string>());
         }
         LOG_INFO("[util] loaded {} multiplayer playlists", m.size());
         return m;

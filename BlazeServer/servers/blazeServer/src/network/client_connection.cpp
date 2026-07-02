@@ -257,10 +257,6 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
     auto packet = blaze::Packet::parse(fullPacket);
     if (packet) {
         std::string name = blaze::blazePacketName(static_cast<uint16_t>(packet->getComponent()), packet->getCommand(), blaze::MessageType::Message);
-        // Decoding the payload is only for the log line; some requests (e.g.
-        // startMatchmakingScenario) carry TDF shapes our decoder can't fully parse,
-        // which would throw out of this asio callback and abort the server. Never let
-        // a logging decode kill the connection.
         std::string body;
         try {
             auto tdf = packet->getPayloadAsTdf();
