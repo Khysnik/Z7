@@ -165,9 +165,11 @@ void PlayerProfile::applyGameReport(const std::unordered_map<std::string, double
 
         double nv;
         if (rule == "Set") nv = value;
-        else if (rule == "Low")  { 
-            if (value >= kSentinel) continue; 
-            nv = std::min(old, value); 
+        else if (rule == "Low")  {
+            if (value >= kSentinel) continue;
+            // A "low value" (best time) stat sitting at <= 0 is unset, not a real
+            // record — take the new value instead of min()'ing against an unbeatable 0.
+            nv = (old <= 0.0) ? value : std::min(old, value);
         }
         else if (rule == "High") { 
             if (value <= -kSentinel) continue; 

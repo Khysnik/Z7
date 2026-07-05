@@ -230,7 +230,7 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePacket(const blaze::Packet&
 A new battle is blooming – are you ready to take it on?
 
 This used to be an advertisement for BFN, but now it can be whatever you want thanks to the Z7 emulator!)"},
-        {"777777", "https://localhost:42220/PlantsVsZombies/GW2/image/userinbox/promotion/PvZGW2_BFN_StandardEdition.jpg"},
+        {"777777", utils::kEditorialBase + "/PlantsVsZombies/GW2/image/userinbox/promotion/PvZGW2_BFN_StandardEdition.jpg"},
         {"777780", "0"},
         {"777781", ""},
         {"777782", "_qPPhIUcQbkGYTf"},
@@ -247,7 +247,7 @@ Drop by and buy before I go bye bye and you cry!
 See you in the Plant or Zombie base!
 
 Tro-lo-lo!)"},
-        {"777777", "https://localhost:42220/PlantsVsZombies/GW2/image/userinbox/blackmarket/rux.jpg"},
+        {"777777", utils::kEditorialBase + "/PlantsVsZombies/GW2/image/userinbox/blackmarket/rux.jpg"},
         {"777780", "0"},
         {"777781", ""},
         {"777782", "_LHbVSdWOGkG-KW"},
@@ -478,9 +478,12 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityAchievements(
 ) {
     LOG_INFO("[PvzGw] getCommunityAchievements from {}", client->getRemoteAddress());
 
-    // The 3-tier community challenge (progress + timers) comes from the editorial
-    // server so it advances in sync across servers. Defaults keep the pre-existing
-    // static challenge if editorial is unavailable.
+    // Offline mode (-disableCC): reply with no payload so the client sees no challenge.
+    if (config::disableCommunityChallenge) {
+        LOG_INFO("[PvzGw] community challenge disabled -> empty reply");
+        return request.createReply();
+    }
+
     const json c = fetchLive("/gw2/live/communitychallenge?user=" + std::to_string(config::blazeId), nullptr);
 
     auto reply = request.createReply();
@@ -521,54 +524,54 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleClaimCommunityEventReward(c
     const int64_t tier = getIntField(request.getPayloadAsTdf(), "TIER", 0);
     LOG_INFO("[PvzGw] claimCommunityEventReward from {} (TIER={})", client->getRemoteAddress(), tier);
 
-    // Roll a normal reward chest (same pack for all three tiers for now).
     const json& ev = content("community.json");
     const std::string pk = ev.value("eventReward", std::string("dynpk272"));
-    auto loot = data::rollPack(pk);
+    auto loot = data::rollChest();
 
     std::map<std::string, int64_t> ilst;
     if (loot.valid) {
         for (const auto& [ais, qty] : loot.consumables) { data::addInventoryItem(ais, qty); ilst[ais] += qty; }
         for (const auto& key : loot.unlocks)            { data::addInventoryUnlock(key);   ilst[key] = 1;    }
         data::saveInventory();
-        LOG_INFO("[PvzGw] event reward '{}' (tier {}): {} consumables, {} unlocks",
-                 pk, tier, loot.consumables.size(), loot.unlocks.size());
+        LOG_INFO("[PvzGw] event reward chest (tier {}): {} consumables, {} unlocks",
+                 tier, loot.consumables.size(), loot.unlocks.size());
     }
     if (!ilst.empty())
         pushInventoryNotif(client, ilst);
 
-    // Reveal response = a standard chest roll (ORSP.PACK.ITLI), the same shape the
-    // client uses for a pack open, so the reward chest animates and shows its cards.
-    const int64_t balance = data::getInventoryQuantity("Coinz");
     std::map<std::string, int64_t> cnsm(loot.consumables.begin(), loot.consumables.end());
+    const std::string aulk = loot.unlocks.empty() ? std::string() : loot.unlocks.front();
     static int64_t s_evInstance = 1;
     const int64_t now = blazeServerNow() * 1000000LL;
 
     auto reply = request.createReply();
     reply->setPayload(blaze::TdfBuilder()
-        .integer("FFCB", balance)                       // finalCoinBalance
-        .string ("FFCT", "Coinz")                       // finalCoinType
-        .beginStruct("ORSP")
-            .integerMap("CNSM", cnsm)                   // consumables granted
-            .beginStruct("PACK")
-                .string ("ADDT", "")
-                .integer("AUDL", 65)
-                .integer("COST", 0)                     // free reward
-                .string ("DESC", "")
-                .string ("GKEY", "")
-                .string ("IMGN", "")
-                .list   ("ITLI", blaze::TdfType::String, loot.itli)   // rolled cards (reveal order)
-                .integer("PID", 647607740 + s_evInstance++)
-                .string ("PKEY", pk)
-                .string ("PUDS", "")
-                .integer("SCAT", 2)
-                .integer("TGEN", now)
-                .string ("TITL", "")
-                .integer("TVAL", now)
-                .list   ("TYPE", blaze::TdfType::String, { "CardPackType_Regular" })
-                .integer("UID", config::blazeId)
+        .boolean("CCSC", true)                          // success
+        .beginList("GOPR")                              // openPackResponseList
+            .beginStruct()                              // Packs::OpenPackResponse
+                .string ("AULK", aulk)                  // additionalUnlocks
+                .integerMap("CNSM", cnsm)               // consumables granted
+                .string ("LOUT", "")                    // logOutput
+                .beginStruct("PACK")
+                    .string ("ADDT", "")
+                    .integer("AUDL", -1)
+                    .integer("COST", 0)                 // free reward
+                    .string ("DESC", "")
+                    .string ("GKEY", "")
+                    .string ("IMGN", "")
+                    .list   ("ITLI", blaze::TdfType::String, loot.itli)   // rolled cards (reveal order)
+                    .integer("PID", 647607740 + s_evInstance++)
+                    .string ("PKEY", pk)
+                    .string ("PUDS", "")
+                    .integer("SCAT", 2)
+                    .integer("TGEN", now)
+                    .string ("TITL", "")
+                    .integer("TVAL", now)
+                    .list   ("TYPE", blaze::TdfType::String, { "CardPackType_CommunityEventReward" })
+                    .integer("UID", config::blazeId)
+                .endStruct()
             .endStruct()
-        .endStruct()
+        .endList()
         .build());
     return reply;
 }
@@ -589,9 +592,6 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(con
     std::string slid = getStrField(requestTdf, "SLID");
     LOG_INFO("[PvzGw] purchaseBlackMarketItem from {} (SLID={})", client->getRemoteAddress(), slid);
 
-    // Find the slot in the current (editorial) rotation. Copy its fields out
-    // inside the loop: bm.value("slots", ...) returns a temporary array, so a
-    // pointer into an element would dangle once the range-for statement ends.
     const json bm = fetchLive("/gw2/live/blackmarket", "blackmarket.json");
     int64_t price = 0;
     std::string itid, kind;
@@ -613,10 +613,6 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(con
         return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
     }
 
-    // Classify by the editorial-provided kind: only "consumable" is a stackable
-    // quantity item; cosmetics / abilities / stickers / costumes are permanent
-    // unlocks and must be saved to the unlock list (or they're lost on relog).
-    // Fall back to a key-prefix heuristic when kind is absent (static data).
     const bool consumable = !kind.empty()
         ? (kind == "consumable")
         : !(itid.rfind("Cus",0)==0 || itid.rfind("stk",0)==0 || itid.rfind("aschar",0)==0
@@ -630,13 +626,10 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handlePurchaseBlackMarketItem(con
     LOG_INFO("[PvzGw] black market: bought {} ({}) for {} -> Coinz {}",
              itid, kind.empty() ? (consumable ? "consumable" : "unlock") : kind, price, balance);
 
-    // HUD update (new balance + granted item)
+    // HUD update
     pushInventoryNotif(client, { {itid, 1} });
 
-    // PurchaseBlackMarketItemResponse = OPRL (the buy is delivered as a 1-item
-    // pack open, list of Blaze::Packs::PurchaseAndOpenPackResponse) + SUCC (bool).
-    // The client reads OPRL[0].ORSP.PACK.ITLI to reveal the purchased item; a bare
-    // SUCC ack leaves the reveal screen hanging.
+
     std::map<std::string, int64_t> cnsm;
     if (consumable) cnsm[itid] = 1;   // consumables reveal via CNSM too
 
@@ -689,8 +682,12 @@ std::unique_ptr<blaze::Packet> PvzGwComponent::handleSetBlackMarketViewed(const 
 std::unique_ptr<blaze::Packet> PvzGwComponent::handleGetCommunityPortalData(const blaze::Packet& request, std::shared_ptr<network::ClientConnection> client) {
     LOG_INFO("[PvzGw] getCommunityPortalData from {}", client->getRemoteAddress());
 
-    // Community event + window come from the editorial server (synchronized);
-    // falls back to static community.json offsets if it's unavailable.
+    // Offline mode (-disableCP): reply with no payload so the client sees no portal.
+    if (config::disableCommunityPortal) {
+        LOG_INFO("[PvzGw] community portal disabled -> empty reply");
+        return request.createReply();
+    }
+
     const json ev = fetchLive("/gw2/live/communityevent", "community.json");
     bool feat = ev.value("featured", false);
     int64_t now = blazeServerNow();

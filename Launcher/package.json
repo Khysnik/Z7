@@ -1,0 +1,45 @@
+{
+	"name": "launcher",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"tauri": "tauri"
+	},
+	"devDependencies": {
+		"@fontsource-variable/inter": "^5.2.8",
+		"@hugeicons/core-free-icons": "^4.2.1",
+		"@hugeicons/svelte": "^1.1.3",
+		"@internationalized/date": "^3.12.2",
+		"@sveltejs/adapter-auto": "^7.0.1",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@tailwindcss/vite": "^4.3.0",
+		"@tauri-apps/cli": "^2.11.3",
+		"bits-ui": "^2.18.1",
+		"clsx": "^2.1.1",
+		"flowbite": "^4.0.2",
+		"flowbite-svelte": "^1.33.1",
+		"flowbite-svelte-icons": "^3.1.0",
+		"shadcn-svelte": "^1.3.0",
+		"svelte": "^5.56.1",
+		"svelte-sidebar-menu": "^0.9.12",
+		"tailwind-merge": "^3.6.0",
+		"tailwind-variants": "^3.2.2",
+		"tailwindcss": "^4.3.0",
+		"tw-animate-css": "^1.4.0",
+		"vite": "^8.0.16"
+	},
+	"dependencies": {
+		"@lucide/svelte": "^1.21.0",
+		"@tauri-apps/plugin-dialog": "^2.7.1",
+		"@tauri-apps/plugin-fs": "^2.5.1",
+		"@tauri-apps/plugin-shell": "^2.3.5",
+		"lucide-svelte": "^1.0.1"
+	}
+}

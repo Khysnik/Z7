@@ -12,6 +12,5 @@ cmake-build-*/
 dist/
 build.mjs
 cmake/
-Launcher/
 blazeServerBFN/
 blazeServerOld/

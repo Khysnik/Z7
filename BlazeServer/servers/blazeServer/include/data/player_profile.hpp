@@ -22,6 +22,8 @@ public:
     bool save() const;                     // write back to the loaded path
     bool loaded() const { return m_loaded; }
 
+    void setEntityId(int64_t id) { m_entityId = id; }   // EID must match the login blazeId
+
     blaze::TdfStruct buildStatsNotif() const;
 
     blaze::TdfStruct buildStatGroup() const;

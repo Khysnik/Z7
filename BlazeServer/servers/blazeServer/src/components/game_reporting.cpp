@@ -112,6 +112,11 @@ std::unique_ptr<blaze::Packet> GameReportingComponent::handlePacket(
         auto stats = parseReportStats(request.payload());
         LOG_INFO("[GameReporting] submitGameReport from {} ({} per-game stats)",
                  client->getRemoteAddress(), stats.size());
+        // Surface any real Gun Range best time in the report (FLT_MAX = unset). If a GR
+        // run set a time, it shows here and should then land on the leaderboard.
+        for (const auto& [k, v] : stats)
+            if (k.find("gr_char") != std::string::npos && v < 3.0e38)
+                LOG_INFO("[GameReporting]   GR best time: {} = {:.3f}", k, v);
         if (!stats.empty()) {
             data::PlayerProfile::instance().applyGameReport(stats);
             postChallengeContribution(stats);   // forward vanquish deltas to editorial

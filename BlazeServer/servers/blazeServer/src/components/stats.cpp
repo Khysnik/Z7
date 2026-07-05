@@ -90,11 +90,15 @@ void submitLeaderboardScores() {
     json scores = json::object();
     for (const auto& [name, board] : lb["boards"].items()) {
         const PlayerScore sc = playerScore(board);
-        if (sc.value >= kNoTime) continue;   // no time set -> don't submit
+        if (sc.value >= kNoTime || sc.value <= 0.0) continue;   // unset/invalid time -> don't submit
         const int character = board.value("global", false) ? sc.character : board.value("charId", 0);
         scores[name] = { {"value", sc.value}, {"character", character} };
     }
-    if (scores.empty()) return;
+    if (scores.empty()) {
+        LOG_INFO("[Stats] leaderboard submit skipped: no GR times set (all boards >= kNoTime)");
+        return;
+    }
+    LOG_INFO("[Stats] leaderboard submit: {} board score(s) -> {}", scores.size(), utils::kEditorialBase);
     json payload = { {"user", config::blazeId}, {"name", config::persona}, {"scores", scores} };
     try {
         utils::httpPost(utils::kEditorialBase + std::string("/gw2/live/leaderboard/submit"), payload);
@@ -213,6 +217,9 @@ std::unique_ptr<blaze::Packet> StatsComponent::handleLeaderboardGroup(const blaz
 std::unique_ptr<blaze::Packet> StatsComponent::handleLeaderboard(const blaze::Packet& request, std::shared_ptr<ClientConnection> client) {
     std::string name = boardName(request, client);
     const json* board = findBoard(name);
+    // Also register the player's times here: the client may fetch a board via
+    // getLeaderboard/getCentered/getFiltered without ever calling getLeaderboardGroup.
+    if (board) submitLeaderboardScores();
     const json entries = board ? fetchLeaderboardEntries(name, board) : json::array();
     LOG_INFO("[Stats] getLeaderboard '{}' ({} entries)", name, entries.size());
     auto reply = request.createReply();

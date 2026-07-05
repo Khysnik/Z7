@@ -88,8 +88,8 @@ void ClientConnection::sendPacket(const blaze::Packet& packet) {
         } catch (const std::exception& e) {
             body = std::string(" <undecodable payload: ") + e.what() + ">";
         }
-        LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
-        //LOG_INFO("[{}] << {}", isNotif ? "notif" : "reply", name);
+        //LOG_INFO("[{}] << {}{}", isNotif ? "notif" : "reply", name, body);
+        LOG_INFO("[{}] << {}", isNotif ? "notif" : "reply", name);
     }
     
     auto self = shared_from_this();
@@ -270,7 +270,7 @@ void ClientConnection::handleReadPayload(const asio::error_code& error, size_t /
         } catch (const std::exception& e) {
             body = std::string(" <undecodable payload: ") + e.what() + ">";
         }
-        LOG_INFO("[recv] >> {}{}", name, body);
+        LOG_DEBUG("[recv] >> {}{}", name, body);
         if (m_packetHandler) {
             m_packetHandler(shared_from_this(), std::move(packet));
         }

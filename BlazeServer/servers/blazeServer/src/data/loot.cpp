@@ -210,6 +210,43 @@ int64_t packCost(const std::string& pkey) {
     return it->value("cost", (int64_t)0);
 }
 
+bool packHasReward(const std::string& pkey) {
+    const json& packs = tables().packs;
+    auto it = packs.find(pkey);
+    if (it == packs.end()) return false;                 // unknown pack
+
+    bool sawCharSlot = false;
+    const auto& unlocks = getInventoryUnlocks();
+    std::unordered_set<std::string> owned(unlocks.begin(), unlocks.end());
+
+    for (const auto& slot : it->value("slots", json::array())) {
+        if (slot.value("source", "") != "stickerSet") continue;
+        sawCharSlot = true;
+        int lo = 99, hi = 0;
+        for (const auto& r : slot.value("rarityIn", json::array())) {
+            int rk = rarityRank(r.get<std::string>()); lo = std::min(lo, rk); hi = std::max(hi, rk);
+        }
+        if (lo > hi) { lo = 2; hi = 3; }
+        const bool excludeLegendary = slot.value("excludeLegendary", true);
+        for (const auto& s : tables().stickers) {
+            const int rk = rarityRank(s.rarity);
+            if (rk < lo || rk > hi) continue;
+            if (excludeLegendary && s.rarity == "Legendary") continue;
+            if (s.pieces.size() < 5) continue;
+            for (const auto& p : s.pieces)
+                if (!owned.count(p)) return true;        // an unowned piece remains
+        }
+    }
+    return !sawCharSlot;   // char pack with everything owned -> no reward
+}
+
+LootResult rollChest() {
+    LootResult out;
+    out.valid = true;
+    rollCosmetic(out, 0);
+    return out;
+}
+
 // Roll a pack by its keyname, returning invalid if the pack doesnt exist
 LootResult rollPack(const std::string& pkey) {
     LootResult out;

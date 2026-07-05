@@ -5,6 +5,7 @@
 #include "utils/config.hpp"
 #include "utils/json.hpp"
 #include "utils/server_time.hpp"
+#include "utils/editorial.hpp"
 #include "config.hpp"
 
 #include <nlohmann/json.hpp>
@@ -346,7 +347,7 @@ std::unique_ptr<blaze::Packet> Util::handleFetchClientConfig(
     } else if (section == "EDITORIAL") {
 
         builder.stringMap("CONF", {
-            {"url", "https://localhost:42220/PlantsVsZombies/GW2/config/pc/game.xml"},
+            {"url", utils::kEditorialBase + "/PlantsVsZombies/GW2/config/pc/game.xml"},
         });
     } else if (section == "SPOTLIGHT") {
         builder.stringMap("CONF", {

@@ -331,11 +331,11 @@ std::unique_ptr<blaze::Packet> GameManager::handleStartMatchmaking(
     
     auto reply = request.createReply();
     reply->setPayload(builder.build());
-    
+
     LOG_INFO("[game] startMatchmaking player={}", client->getPersonaName());
-    
+
     // TODO: Send async notification when match found
-    
+
     return reply;
 }
 

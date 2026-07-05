@@ -44,7 +44,7 @@ function startRedirector(port, rAddress, rPort) {
 <serverinstanceinfo>
   <address member="0">
     <valu>
-      <hostname>localhost</hostname>
+      <hostname>spring18.gosredirector.ea.com</hostname>
       <ip>${ipv4ToInt(rAddress)}</ip>
       <port>${rPort}</port>
     </valu>

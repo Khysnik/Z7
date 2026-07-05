@@ -44,19 +44,29 @@ blaze::TdfStruct buildTemplateResponse() {
     return b.endList().build();
 }
 
-blaze::TdfStruct buildOpenResponse(const std::string& pkey, std::shared_ptr<ClientConnection> client) {
-    auto loot = data::rollPack(pkey);
+// A hub/town-hall/reward chest, opened via purchaseAndOpenPack with a "chestpk*" key.
+// Chests are Star-priced, aren't in the pack table, and reveal a "ForChests" card.
+bool isChestPack(const std::string& pid) { return pid.rfind("chestpk", 0) == 0; }
+
+blaze::TdfStruct buildOpenResponse(const std::string& pkey, std::shared_ptr<ClientConnection> client, bool isChest = false) {
+    const std::string currency = isChest ? "Star" : "Coinz";
+    auto loot = isChest ? data::rollChest() : data::rollPack(pkey);
+    // Hub/town-hall chests are Star-priced; deduct the price. 7 is the standard hub
+    // chest price seen live (chestpkhub27); per-chest prices could be added later.
+    if (isChest) loot.cost = 7;
     int64_t balance;
     if (loot.valid) {
-        // Deduct cost, grant consumables + unlocks, persist.
-        balance = data::addInventoryItem("Coinz", -loot.cost);
+        // Deduct cost, grant consumables + unlocks, persist. (Chests roll a reward
+        // directly and carry no coin cost -> loot.cost is 0, so nothing is deducted.)
+        balance = data::addInventoryItem(currency, -loot.cost);
         for (const auto& [ais, qty] : loot.consumables) data::addInventoryItem(ais, qty);
         for (const auto& key : loot.unlocks)            data::addInventoryUnlock(key);
         data::saveInventory();
-        LOG_INFO("[Packs] opened '{}' ({}): -{} coinz -> {}, {} consumables, {} unlocks",
-                 pkey, loot.name, loot.cost, balance, loot.consumables.size(), loot.unlocks.size());
+        LOG_INFO("[Packs] {} '{}' ({}): -{} {} -> {}, {} consumables, {} unlocks",
+                 isChest ? "opened chest" : "opened", pkey, loot.name, loot.cost, currency,
+                 balance, loot.consumables.size(), loot.unlocks.size());
     } else {
-        balance = data::getInventoryQuantity("Coinz");
+        balance = data::getInventoryQuantity(currency);
         LOG_WARN("[Packs] open undefined pack '{}' -> empty grant", pkey);
     }
 
@@ -66,12 +76,12 @@ blaze::TdfStruct buildOpenResponse(const std::string& pkey, std::shared_ptr<Clie
     int64_t now = blazeServerNow() * 1000000LL;
     blaze::TdfStruct resp = blaze::TdfBuilder()
         .integer("FFCB", balance)
-        .string("FFCT", "Coinz")
+        .string("FFCT", currency)
         .beginStruct("ORSP")
             .integerMap("CNSM", cnsm)
             .beginStruct("PACK")
                 .string("ADDT", "")
-                .integer("AUDL", 65)
+                .integer("AUDL", isChest ? -1 : 65)
                 .integer("COST", loot.cost)
                 .string("DESC", "")
                 .string("GKEY", "")
@@ -84,7 +94,7 @@ blaze::TdfStruct buildOpenResponse(const std::string& pkey, std::shared_ptr<Clie
                 .integer("TGEN", now)
                 .string("TITL", "")
                 .integer("TVAL", now)
-                .list("TYPE", blaze::TdfType::String, {"CardPackType_Regular"})
+                .list("TYPE", blaze::TdfType::String, { isChest ? "CardPackType_ForChests" : "CardPackType_Regular" })
                 .integer("UID", config::blazeId)
             .endStruct()
         .endStruct()
@@ -207,10 +217,25 @@ std::unique_ptr<blaze::Packet> PacksComponent::handleOpenPack(
     std::string pid = getStr(request.getPayloadAsTdf(), "PID");
     LOG_INFO("[Packs] openPack '{}' from {}", pid, client->getRemoteAddress());
 
+    // Chests (chestpk*) come through this same command but pay in Stars and roll a
+    // reward directly (they aren't coin packs) -> handle before the coin-cost path.
+    if (isChestPack(pid)) {
+        auto reply = request.createReply();
+        blaze::TdfStruct resp = buildOpenResponse(pid, client, /*isChest*/ true);
+        if (!resp.empty()) reply->setPayload(resp);
+        return reply;
+    }
+
     int64_t cost = data::packCost(pid);
     int64_t balance = data::getInventoryQuantity("Coinz");
     if (cost > 0 && balance < cost) {
         LOG_WARN("[Packs] insufficient funds for '{}': have {}, need {}", pid, balance, cost);
+        return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
+    }
+    // Character-variant pack with everything already unlocked would charge coins and
+    // grant nothing (looping the reveal) -> refuse with the not-enough-coins error.
+    if (!data::packHasReward(pid)) {
+        LOG_WARN("[Packs] '{}' has no unowned reward (all characters unlocked) -> refusing open", pid);
         return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
     }
 
@@ -254,10 +279,25 @@ std::unique_ptr<blaze::Packet> PacksComponent::handlePurchaseAndOpenPack(
     std::string pid = getStr(request.getPayloadAsTdf(), "PID");
     LOG_INFO("[Packs] purchaseAndOpenPack '{}' from {}", pid, client->getRemoteAddress());
 
+    // Chests (chestpk*) come through this same command but pay in Stars and roll a
+    // reward directly (they aren't coin packs) -> handle before the coin-cost path.
+    if (isChestPack(pid)) {
+        auto reply = request.createReply();
+        blaze::TdfStruct resp = buildOpenResponse(pid, client, /*isChest*/ true);
+        if (!resp.empty()) reply->setPayload(resp);
+        return reply;
+    }
+
     int64_t cost = data::packCost(pid);
     int64_t balance = data::getInventoryQuantity("Coinz");
     if (cost > 0 && balance < cost) {
         LOG_WARN("[Packs] insufficient funds for '{}': have {}, need {}", pid, balance, cost);
+        return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
+    }
+    // Character-variant pack with everything already unlocked would charge coins and
+    // grant nothing (looping the reveal) -> refuse with the not-enough-coins error.
+    if (!data::packHasReward(pid)) {
+        LOG_WARN("[Packs] '{}' has no unowned reward (all characters unlocked) -> refusing open", pid);
         return request.createErrorReply(blaze::BlazeError::ERR_INSUFFICIENT_FUNDS);
     }
 

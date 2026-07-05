@@ -17,7 +17,13 @@ struct LootResult {
 
 LootResult rollPack(const std::string& pkey);
 
+// Roll a Star-priced chest reward (a cosmetic, or a consumable if all cosmetics owned).
+LootResult rollChest();
+
 int64_t packCost(const std::string& pkey);
+
+// False when a character-variant pack has no unowned reward left (all characters owned).
+bool packHasReward(const std::string& pkey);
 
 int reconcileVariants();
 

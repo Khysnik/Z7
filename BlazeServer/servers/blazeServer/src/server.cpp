@@ -13,6 +13,7 @@
 #include "components/game_reporting.hpp"
 #include "data/player_profile.hpp"
 #include "data/inventory.hpp"
+#include "config.hpp"
 #include "utils/logger.hpp"
 #include "utils/json.hpp"
 #ifdef _WIN32
@@ -69,6 +70,9 @@ void Server::setupComponents() {
     registry.registerComponent(std::make_shared<components::GameReportingComponent>());
 
     data::PlayerProfile::instance().load("data/MPProfile.json");
+    // Bind the profile's stat-entity id to this account so the client maps the
+    // stats back to the logged-in player (both are the blazeId / PID).
+    data::PlayerProfile::instance().setEntityId(config::blazeId);
     data::PlayerProfile::instance().loadAggregation(utils::dataSection("stat_aggregation"));
 
     data::loadInventory("data/inventory.json");
