@@ -19,7 +19,7 @@ Before running the emulator, you must add the following entry to your hosts file
 ```
 127.0.0.1 winter15.gosredirector.ea.com
 ```
-Download and extract the release zip file. All you need to do to run the emulator is run launch.bat and enter your GW2 install folder. It will automatically patch the game and start the game with the private server. After the first launch setup, launch.bat will used the saved paths and start everything automatically
+Download and extract the release zip file. All you need to do to run the emulator is run Z7Launcher.exe and enter select your game's unpatched GW2.Main_Win64_Retail.exe. It will automatically patch the game and start the game with the private server. After the first launch setup, Z7Launcher will used the saved paths and start everything automatically
 
 
 ## Contact me
