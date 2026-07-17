@@ -1,5 +1,4 @@
 <script>
-    import { Command } from "@tauri-apps/plugin-shell";
     import { invoke } from "@tauri-apps/api/core";
     import { open as openDialog, message } from "@tauri-apps/plugin-dialog";
     import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
@@ -13,11 +12,9 @@
 
     const GAME_EXE = "GW2.Main_Win64_Retail.exe";
     const PATCHED_EXE = "GW2-Z7.exe";
-    const HOSTS = "C:\\Windows\\System32\\drivers\\etc\\hosts";
-    const REDIRECT_IP = "127.0.0.1";
-    const REDIRECT_HOST = "winter15.gosredirector.ea.com";
 
     let gameDir = $state(""); // chosen game folder
+    let extraArgs = $state(""); // additional command-line args passed to the game
     let patched = $state(false); // GW2-Z7.exe present?
     let busy = $state(false);
     let log = $state([]);
@@ -56,26 +53,38 @@
 
     loadPersona();
 
-    // restore last chosen folder
+    // restore last chosen folder + saved launch args
     if (typeof localStorage !== "undefined") {
         gameDir = localStorage.getItem("gw2dir") ?? "";
+        extraArgs = localStorage.getItem("gw2args") ?? "";
         if (gameDir) refreshPatched();
     }
 
-    const cmd = (args) => Command.create("cmd", args).execute();
-    // Fire-and-forget: don't await (the launched process holds the stdio pipe,
-    // so execute() wouldn't resolve until it exits). cmd has already detached
-    // the target via `start` by the time that matters.
-    const fire = (args) =>
-        Command.create("cmd", args)
-            .execute()
-            .catch((e) => say(`launch warning: ${e}`));
+    // persist the extra args as they change
+    $effect(() => {
+        if (typeof localStorage !== "undefined")
+            localStorage.setItem("gw2args", extraArgs);
+    });
+
+    // Split a command-line string into args, honoring single/double quotes.
+    const parseArgs = (s) => {
+        const out = [];
+        const re = /"([^"]*)"|'([^']*)'|(\S+)/g;
+        let m;
+        while ((m = re.exec(s ?? "")) !== null)
+            out.push(m[1] ?? m[2] ?? m[3]);
+        return out;
+    };
+
     const dirOf = (p) =>
         p.slice(0, Math.max(p.lastIndexOf("\\"), p.lastIndexOf("/")));
 
     async function exists(path) {
-        const r = await cmd(["/c", "if", "exist", path, "echo", "YES"]);
-        return r.stdout.includes("YES");
+        try {
+            return await invoke("path_exists", { path });
+        } catch {
+            return false;
+        }
     }
     async function refreshPatched() {
         patched = gameDir ? await exists(`${gameDir}\\${PATCHED_EXE}`) : false;
@@ -134,19 +143,6 @@
         await refreshPatched();
     }
 
-    async function hostsOk() {
-        const txt = await readTextFile(HOSTS);
-        return txt.split(/\r?\n/).some((line) => {
-            const l = line.split("#")[0].trim();
-            if (!l) return false;
-            const parts = l.split(/\s+/);
-            return (
-                parts[0] === REDIRECT_IP &&
-                parts.slice(1).includes(REDIRECT_HOST)
-            );
-        });
-    }
-
     async function patch() {
         const Z7 = await baseDir();
         const orig = `${gameDir}\\${GAME_EXE}`;
@@ -156,34 +152,35 @@
         if (!(await exists(orig)))
             throw new Error(`${GAME_EXE} not found in ${gameDir}`);
 
-        await cmd(["/c", "del", "/q", tmp]);
+        // run courgette directly (via a Rust command) so paths with spaces work —
+        // cmd.exe would re-tokenize/strip quotes and break spaced folder paths.
+        await invoke("remove_path", { path: tmp }); // clear any leftover tmp
 
         say("Applying PreEAAC patch…");
-        // run courgette via cmd so the program path needn't be a fixed scope entry
-        let r = await cmd([
-            "/c",
-            courgette,
-            "-apply",
-            orig,
-            `${Z7}\\PreEAAC.patch`,
-            tmp,
-        ]);
+        let r = await invoke("run_process", {
+            program: courgette,
+            args: ["-apply", orig, `${Z7}\\PreEAAC.patch`, tmp],
+            cwd: Z7,
+        });
         if (r.code !== 0)
-            throw new Error(`EAAC patch failed: ${r.stderr || r.code}`);
+            throw new Error(
+                `EAAC patch failed: ${r.stderr || r.stdout || r.code}`,
+            );
 
-        say("Applying CertPin patch…");
-        r = await cmd([
-            "/c",
-            courgette,
-            "-applybsdiff",
-            tmp,
-            `${Z7}\\CertPin.patch`,
-            out,
-        ]);
+        say("Applying Z7 patch…");
+        // Z7.patch bundles the CertPin bypass, the redirector-host -> "localhost"
+        // string patch, and the initfs integrity-check bypass in one bsdiff.
+        r = await invoke("run_process", {
+            program: courgette,
+            args: ["-applybsdiff", tmp, `${Z7}\\Z7.patch`, out],
+            cwd: Z7,
+        });
         if (r.code !== 0)
-            throw new Error(`Cert-pin patch failed: ${r.stderr || r.code}`);
+            throw new Error(
+                `Z7 patch failed: ${r.stderr || r.stdout || r.code}`,
+            );
 
-        await cmd(["/c", "del", "/q", tmp]);
+        await invoke("remove_path", { path: tmp }); // best-effort cleanup
         say(`Patched → ${PATCHED_EXE}`);
     }
 
@@ -192,16 +189,9 @@
         busy = true;
         log = [];
         try {
-            if (!(await hostsOk())) {
-                await message(
-                    `Your hosts file is missing the redirect entry. The game can't connect without it.\n\n` +
-                        `Add this line to ${HOSTS} using Notepad run as Administrator, then try again:\n\n` +
-                        `${REDIRECT_IP} ${REDIRECT_HOST}`,
-                    { title: "Missing hosts entry", kind: "error" },
-                );
-                return;
-            }
-
+            // The Z7 patch rewrites the redirector host to "localhost", so a
+            // freshly patched game connects to the local server directly — no
+            // hosts-file entry required.
             if (!(await exists(`${gameDir}\\${PATCHED_EXE}`))) {
                 say("Patching game…");
                 await patch();
@@ -235,7 +225,11 @@
             );
 
             say("Launching game…");
-            fire(["/c", "start", "", "/d", gameDir, PATCHED_EXE]);
+            await invoke("spawn_hidden", {
+                program: `${gameDir}\\${PATCHED_EXE}`,
+                args: parseArgs(extraArgs),
+                cwd: gameDir,
+            });
             say("Launched. Both servers will close when the game exits.");
 
             // When the game (GW2-Z7.exe) is closed, shut down both servers.
@@ -314,6 +308,17 @@
                 {#if gameDir}
                     <span class="path mono">{gameDir}</span>
                 {/if}
+            </div>
+
+            <div class="stack" style="margin-top: 4px;">
+                <label class="card-desc" for="extraargs" style="margin: 0;">Additional command-line args</label>
+                <input
+                    id="extraargs"
+                    type="text"
+                    bind:value={extraArgs}
+                    spellcheck="false"
+                    class="mono"
+                />
             </div>
 
             <button class="btn launch lg" disabled={!gameDir || busy} onclick={launch}>

@@ -37,7 +37,7 @@
 
   async function load() {
     try {
-      CP_IMG_DIR = `${await baseDir()}\\servers\\editorial\\GW2\\image\\cp`;
+      CP_IMG_DIR = `${await baseDir()}\\files\\GW2\\image\\cp`;
       const cfg = (await readSection("community")) ?? {};
       const packsFile = (await readSection("packs")) ?? {};
 

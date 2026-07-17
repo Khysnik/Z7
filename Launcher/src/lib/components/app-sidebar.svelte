@@ -11,6 +11,7 @@
         { title: "Bytevault", url: "/bytevault" },
         { title: "Community Challenge", url: "/community-challenge", online: true },
         { title: "Community Portal", url: "/community-portal", online: true },
+        { title: "Gift Packs", url: "/gift-packs" },
         { title: "Inventory", url: "/inventory" },
         { title: "Killswitches", url: "/killswitches" },
         { title: "Pack List", url: "/pack-list" },

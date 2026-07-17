@@ -10,19 +10,19 @@
     "fs:default",
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "C:\\**" }]
+      "allow": [{ "path": "**/*" }]
     },
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "C:\\**" }]
+      "allow": [{ "path": "**/*" }]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "C:\\**" }]
+      "allow": [{ "path": "**/*" }]
     },
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "C:\\**" }]
+      "allow": [{ "path": "**/*" }]
     },
     "dialog:allow-open",
     "dialog:allow-message",

@@ -1,0 +1,28 @@
+{
+ "achievementId": "z7cc1",
+ "name": "Elemental Clash Community Challenge",
+ "desc": "Select your element and get involved in the Elemental Clash Community Challenge! Every vanquish with Toxic, Fire, Ice, and Electric types count. Win, and make off with armfuls of rewards!",
+ "image": "https://i.ytimg.com/vi/EL_XvNLEBAw/sddefault.jpg",
+ "personalHeader": "Your Elemental Vanquishes",
+ "rewardHeader": "Community Goals:",
+ "bronzeThreshold": 15000000,
+ "silverThreshold": 30000000,
+ "goldThreshold": 50000000,
+ "bronzeReward": "Wondrous Pack of Greatness",
+ "silverReward": "Infinity Pack",
+ "goldReward": "Legendary Item",
+ "userThreshold": 1000,
+ "refreshRateSeconds": 60,
+ "proximityCooldownSeconds": 30,
+ "rotationBaseUnix": 1782126000,
+ "rotationPeriodSecs": 1209600,
+ "tracks": {
+  "type": "elements",
+  "keys": [
+   "Fire",
+   "Toxic",
+   "Ice",
+   "Electric"
+  ]
+ }
+}

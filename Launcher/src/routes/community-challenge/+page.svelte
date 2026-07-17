@@ -11,7 +11,7 @@
   import MultiCombobox from "$lib/components/multi-combobox.svelte";
   import { communityChallengeEnabled } from "$lib/state.js";
 
-  const REL = "\\servers\\editorial\\GW2\\live\\communitychallenge.json";
+  const REL = "\\data\\live\\communitychallenge.json";
 
   const NUM_FIELDS = [
     "userThreshold",

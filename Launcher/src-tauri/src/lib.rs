@@ -46,6 +46,46 @@ fn kill_by_name(name: String) {
     kill_name(&name);
 }
 
+// Filesystem helpers that work on any drive (the fs plugin's scope is limited).
+#[tauri::command]
+fn path_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
+}
+
+#[tauri::command]
+fn remove_path(path: String) {
+    let _ = std::fs::remove_file(&path);
+}
+
+// Run a program to completion and return its exit code + output. Uses
+// std::process (CreateProcess) directly so argument paths with spaces are
+// handled correctly — no cmd.exe re-tokenizing/quote-stripping.
+#[derive(serde::Serialize)]
+struct ProcOutput {
+    code: i32,
+    stdout: String,
+    stderr: String,
+}
+
+#[tauri::command]
+fn run_process(program: String, args: Vec<String>, cwd: String) -> Result<ProcOutput, String> {
+    let mut c = std::process::Command::new(&program);
+    c.args(&args);
+    if !cwd.is_empty() {
+        c.current_dir(&cwd);
+    }
+    #[cfg(windows)]
+    c.creation_flags(CREATE_NO_WINDOW);
+    match c.output() {
+        Ok(o) => Ok(ProcOutput {
+            code: o.status.code().unwrap_or(-1),
+            stdout: String::from_utf8_lossy(&o.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
+        }),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 // Start a program detached in the background with no console window.
 #[tauri::command]
 fn spawn_hidden(program: String, args: Vec<String>, cwd: String) -> Result<(), String> {
@@ -93,6 +133,9 @@ pub fn run() {
             base_dir,
             proc_running,
             kill_by_name,
+            path_exists,
+            remove_path,
+            run_process,
             spawn_hidden,
             watch_and_cleanup
         ])
